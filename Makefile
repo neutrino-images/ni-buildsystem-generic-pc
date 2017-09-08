@@ -209,6 +209,7 @@ lua: $(SRC)/lua-$(LUA_VER).tar.gz | $(DEST)
 	rm -rf $(SRC)/lua-$(LUA_VER)
 	tar -C $(SRC) -xf $(SRC)/lua-$(LUA_VER).tar.gz
 	set -e;	cd $(SRC)/lua-$(LUA_VER); \
+		sed -i "s|^#define LUA_ROOT	.*|#define LUA_ROOT	\"$(DEST)/\"|" src/luaconf.h && \
 		$(MAKE) linux; \
 		make install INSTALL_TOP=$(DEST)
 	rm -rf $(SRC)/lua-$(LUA_VER)
