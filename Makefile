@@ -177,10 +177,15 @@ update: $(LH_SRC) $(N_SRC)
 	cd $(N_SRC) && git pull
 	git pull
 
-clean:
+neutrino-clean:
 	-$(MAKE) -C $(N_OBJ) clean
+	rm -rf $(N_OBJ)
+
+libstb-hal-clean:
 	-$(MAKE) -C $(LH_OBJ) clean
-	rm -rf $(N_OBJ) $(LH_OBJ)
+	rm -rf $(LH_OBJ)
+
+clean: neutrino-clean libstb-hal-clean
 
 clean-all: clean
 	rm -rf $(DEST)
