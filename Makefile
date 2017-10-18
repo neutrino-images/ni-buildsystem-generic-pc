@@ -38,12 +38,15 @@
 # apt-get install libjpeg-dev
 # apt-get install libgif-dev
 # apt-get install libflac-dev
+# apt-get install libgstreamer1.0-dev
+# apt-get install libgstreamer-plugins-base1.0-dev
 
 ###############################################################################
 
 NEUTRINO = ni-neutrino-hd
 N_BRANCH = ni/mp/tuxbox
-LIBSTB-HAL = ni-libstb-hal
+#LIBSTB-HAL = ni-libstb-hal
+LIBSTB-HAL = libstb-hal-tango
 
 SOURCE = $(PWD)/../source
 ifeq ($(wildcard $(SOURCE)),)
@@ -94,6 +97,11 @@ CFLAGS += -L$(DEST)/lib64
 CFLAGS += -I/usr/include/sigc++-2.0
 CFLAGS += -I/usr/lib/x86_64-linux-gnu/sigc++-2.0/include
 
+### gstreamer flags
+CFLAGS += $(shell pkg-config --cflags --libs gstreamer-1.0)
+CFLAGS += $(shell pkg-config --cflags --libs gstreamer-audio-1.0)
+CFLAGS += $(shell pkg-config --cflags --libs gstreamer-video-1.0)
+
 PKG_CONFIG_PATH = $(DEST)/lib/pkgconfig
 export PKG_CONFIG_PATH
 
@@ -130,6 +138,7 @@ $(LH_OBJ)/config.status: | $(LH_OBJ) $(LH_SRC)
 		$(LH_SRC)/configure --enable-maintainer-mode \
 			--prefix=$(DEST) \
 			--enable-shared=no \
+			--enable-gstreamer_10=yes \
 			;
 
 $(N_OBJ)/config.status: | $(N_OBJ) $(N_SRC) libstb-hal
@@ -165,7 +174,8 @@ $(SRC):
 	mkdir $@
 
 $(LH_SRC): | $(SOURCE)
-	cd $(SOURCE) && git clone https://bitbucket.org/neutrino-images/$(LIBSTB-HAL).git
+	#cd $(SOURCE) && git clone https://bitbucket.org/neutrino-images/$(LIBSTB-HAL).git
+	cd $(SOURCE) && git clone https://github.com/tangocash/libstb-hal-cst-next.git $(LIBSTB-HAL)
 
 $(N_SRC): | $(SOURCE)
 	cd $(SOURCE) && git clone https://bitbucket.org/neutrino-images/$(NEUTRINO).git
@@ -220,7 +230,8 @@ lua: $(SRC)/lua-$(LUA_VER).tar.gz | $(DEST)
 	rm -rf $(SRC)/lua-$(LUA_VER)
 	rm -rf $(DEST)/man
 
-FFMPEG_VER=3.3.3
+FFMPEG_VER=2.8.13
+#FFMPEG_VER=3.3.3
 $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2: | $(SOURCE)
 	cd $(SRC) && wget http://www.ffmpeg.org/releases/ffmpeg-$(FFMPEG_VER).tar.bz2
 
