@@ -133,9 +133,9 @@ $(LH_OBJ)/config.status: | $(LH_OBJ) $(LH_SRC)
 			;
 
 $(N_OBJ)/config.status: | $(N_OBJ) $(N_SRC) libstb-hal
-	$(N_SRC)/autogen.sh
 	set -e; cd $(N_SRC); \
 		git checkout $(N_BRANCH); \
+	$(N_SRC)/autogen.sh
 	set -e; cd $(N_OBJ); \
 		$(N_SRC)/configure --enable-maintainer-mode \
 			--prefix=$(DEST) \
