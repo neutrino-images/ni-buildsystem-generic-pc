@@ -45,8 +45,7 @@
 
 NEUTRINO = ni-neutrino-hd
 N_BRANCH = ni/mp/tuxbox
-#LIBSTB-HAL = ni-libstb-hal
-LIBSTB-HAL = libstb-hal-tango
+LIBSTB-HAL = ni-libstb-hal-next
 
 SOURCE = $(PWD)/../source
 ifeq ($(wildcard $(SOURCE)),)
@@ -174,8 +173,7 @@ $(SRC):
 	mkdir $@
 
 $(LH_SRC): | $(SOURCE)
-	#cd $(SOURCE) && git clone https://bitbucket.org/neutrino-images/$(LIBSTB-HAL).git
-	cd $(SOURCE) && git clone https://github.com/tangocash/libstb-hal-cst-next.git $(LIBSTB-HAL)
+	cd $(SOURCE) && git clone https://bitbucket.org/neutrino-images/$(LIBSTB-HAL).git
 
 $(N_SRC): | $(SOURCE)
 	cd $(SOURCE) && git clone https://bitbucket.org/neutrino-images/$(NEUTRINO).git
