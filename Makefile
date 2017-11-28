@@ -201,18 +201,15 @@ clean-all: clean
 ###############################################################################
 
 # libdvbsi is not commonly packaged for linux distributions...
-LIBDVBSI_VER=0.3.7
-$(SRC)/libdvbsi++-$(LIBDVBSI_VER).tar.bz2: | $(SRC)
-	cd $(SRC) && wget http://www.saftware.de/libdvbsi++/libdvbsi++-$(LIBDVBSI_VER).tar.bz2
-
-libdvbsi: $(SRC)/libdvbsi++-$(LIBDVBSI_VER).tar.bz2 | $(DEST)
-	rm -rf $(SRC)/libdvbsi++-$(LIBDVBSI_VER)
-	tar -C $(SRC) -xf $(SRC)/libdvbsi++-$(LIBDVBSI_VER).tar.bz2
-	set -e; cd $(SRC)/libdvbsi++-$(LIBDVBSI_VER); \
+libdvbsi: | $(DEST)
+	rm -rf $(SRC)/libdvbsi++
+	git clone git://git.opendreambox.org/git/obi/libdvbsi++.git $(SRC)/libdvbsi++
+	set -e; cd $(SRC)/libdvbsi++; \
+		./autogen.sh; \
 		./configure --prefix=$(DEST); \
 		$(MAKE); \
 		make install
-	rm -rf $(SRC)/libdvbsi++-$(LIBDVBSI_VER)
+	rm -rf $(SRC)/libdvbsi++
 
 LUA_VER=5.3.4
 $(SRC)/lua-$(LUA_VER).tar.gz: | $(SRC)
