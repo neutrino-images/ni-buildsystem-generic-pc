@@ -211,7 +211,7 @@ libdvbsi: | $(DEST)
 		make install
 	rm -rf $(SRC)/libdvbsi++
 
-LUA_VER=5.3.5
+LUA_VER=5.2.4
 $(SRC)/lua-$(LUA_VER).tar.gz: | $(SRC)
 	cd $(SRC) && wget http://www.lua.org/ftp/lua-$(LUA_VER).tar.gz
 
@@ -225,7 +225,7 @@ lua: $(SRC)/lua-$(LUA_VER).tar.gz | $(DEST)
 	rm -rf $(SRC)/lua-$(LUA_VER)
 	rm -rf $(DEST)/man
 
-FFMPEG_VER=3.4.4
+FFMPEG_VER=4.0.2
 $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2: | $(SOURCE)
 	cd $(SRC) && wget http://www.ffmpeg.org/releases/ffmpeg-$(FFMPEG_VER).tar.bz2
 
