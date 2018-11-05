@@ -1,4 +1,4 @@
-###############################################################################
+# -----------------------------------------------------------------------------
 #
 # Makefile for building native ni-neutrino-hd and libstb-hal
 #
@@ -7,10 +7,10 @@
 #
 # prerequisite packages need to be installed, no checking is done for that
 #
-###############################################################################
-
-### This is a 'stand-alone' Makefile that works outside of our buildsystem too.
-
+# -----------------------------------------------------------------------------
+#
+# This is a 'stand-alone' Makefile that works outside of our buildsystem too.
+#
 # Prerequisits
 # ------------
 #
@@ -40,8 +40,8 @@
 # apt-get install libflac-dev
 # apt-get install libgstreamer1.0-dev
 # apt-get install libgstreamer-plugins-base1.0-dev
-
-###############################################################################
+#
+# -----------------------------------------------------------------------------
 
 NEUTRINO = ni-neutrino-hd
 N_BRANCH = ni/mp/tuxbox
@@ -84,19 +84,19 @@ CFLAGS += -D__STDC_FORMAT_MACROS
 CFLAGS += -D__STDC_CONSTANT_MACROS
 CFLAGS += -DASSUME_MDEV
 CFLAGS += -DTEST_MENU
-### enable --as-needed for catching more build problems...
+# enable --as-needed for catching more build problems...
 CFLAGS += -Wl,--as-needed
 
-### in case some libs are installed in $(DEST) (e.g. dvbsi++)
+# in case some libs are installed in $(DEST) (e.g. dvbsi++)
 CFLAGS += -I$(DEST)/include
 CFLAGS += -L$(DEST)/lib
 CFLAGS += -L$(DEST)/lib64
 
-### workaround for debian's non-std sigc++ locations
+# workaround for debian's non-std sigc++ locations
 CFLAGS += -I/usr/include/sigc++-2.0
 CFLAGS += -I/usr/lib/x86_64-linux-gnu/sigc++-2.0/include
 
-### gstreamer flags
+# gstreamer flags
 CFLAGS += $(shell pkg-config --cflags --libs gstreamer-1.0)
 CFLAGS += $(shell pkg-config --cflags --libs gstreamer-audio-1.0)
 CFLAGS += $(shell pkg-config --cflags --libs gstreamer-video-1.0)
@@ -107,7 +107,7 @@ export PKG_CONFIG_PATH
 CXXFLAGS = $(CFLAGS)
 export CFLAGS CXXFLAGS
 
-###############################################################################
+# -----------------------------------------------------------------------------
 
 # first target is default...
 default: neutrino
@@ -124,21 +124,14 @@ run-valgrind:
 	export SIMULATE_FE=1; \
 	valgrind --leak-check=full --log-file="$(DEST)/valgrind.log" -v $(DEST)/bin/neutrino
 
+# -----------------------------------------------------------------------------
+
 neutrino: $(N_OBJ)/config.status | $(DEST)
 	-rm $(N_OBJ)/src/neutrino # force relinking on changed libstb-hal
 	$(MAKE) -C $(N_OBJ) install
 
 libstb-hal: $(LH_OBJ)/config.status | $(DEST)
 	$(MAKE) -C $(LH_OBJ) install
-
-$(LH_OBJ)/config.status: | $(LH_OBJ) $(LH_SRC)
-	$(LH_SRC)/autogen.sh
-	set -e; cd $(LH_OBJ); \
-		$(LH_SRC)/configure --enable-maintainer-mode \
-			--prefix=$(DEST) \
-			--enable-shared=no \
-			--enable-gstreamer_10=yes \
-			;
 
 $(N_OBJ)/config.status: | $(N_OBJ) $(N_SRC) libstb-hal
 	set -e; cd $(N_SRC); \
@@ -158,6 +151,17 @@ $(N_OBJ)/config.status: | $(N_OBJ) $(N_SRC) libstb-hal
 			; \
 		test -e version.h || touch version.h
 
+$(LH_OBJ)/config.status: | $(LH_OBJ) $(LH_SRC)
+	$(LH_SRC)/autogen.sh
+	set -e; cd $(LH_OBJ); \
+		$(LH_SRC)/configure --enable-maintainer-mode \
+			--prefix=$(DEST) \
+			--enable-shared=no \
+			--enable-gstreamer_10=yes \
+			;
+
+# -----------------------------------------------------------------------------
+
 $(OBJ):
 	mkdir $(OBJ)
 
@@ -172,11 +176,13 @@ $(DEST):
 $(SRC):
 	mkdir $@
 
+$(N_SRC): | $(SOURCE)
+	cd $(SOURCE) && git clone https://bitbucket.org/neutrino-images/$(NEUTRINO).git
+
 $(LH_SRC): | $(SOURCE)
 	cd $(SOURCE) && git clone https://bitbucket.org/neutrino-images/$(LIBSTB-HAL).git
 
-$(N_SRC): | $(SOURCE)
-	cd $(SOURCE) && git clone https://bitbucket.org/neutrino-images/$(NEUTRINO).git
+# -----------------------------------------------------------------------------
 
 checkout: $(SOURCE)/$(LIBSTB-HAL) $(SOURCE)/$(NEUTRINO)
 
@@ -198,7 +204,7 @@ clean: neutrino-clean libstb-hal-clean
 clean-all: clean
 	rm -rf $(DEST)
 
-###############################################################################
+# -----------------------------------------------------------------------------
 
 # libdvbsi is not commonly packaged for linux distributions...
 libdvbsi: | $(DEST)
@@ -215,6 +221,8 @@ LUA_VER=5.2.4
 $(SRC)/lua-$(LUA_VER).tar.gz: | $(SRC)
 	cd $(SRC) && wget http://www.lua.org/ftp/lua-$(LUA_VER).tar.gz
 
+# -----------------------------------------------------------------------------
+
 lua: $(SRC)/lua-$(LUA_VER).tar.gz | $(DEST)
 	rm -rf $(SRC)/lua-$(LUA_VER)
 	tar -C $(SRC) -xf $(SRC)/lua-$(LUA_VER).tar.gz
@@ -224,6 +232,8 @@ lua: $(SRC)/lua-$(LUA_VER).tar.gz | $(DEST)
 		make install INSTALL_TOP=$(DEST)
 	rm -rf $(SRC)/lua-$(LUA_VER)
 	rm -rf $(DEST)/man
+
+# -----------------------------------------------------------------------------
 
 FFMPEG_VER=4.0.2
 $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2: | $(SOURCE)
@@ -238,7 +248,7 @@ ffmpeg: $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2
 		make install
 	rm -rf $(SRC)/ffmpeg-$(FFMPEG_VER)
 
-###############################################################################
+# -----------------------------------------------------------------------------
 
 PHONY = checkout
 .PHONY: $(PHONY)
