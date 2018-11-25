@@ -149,7 +149,6 @@ $(N_OBJ)/config.status: | $(N_OBJ) $(N_SRC) libstb-hal
 			--with-stb-hal-includes=$(LH_SRC)/include \
 			--with-stb-hal-build=$(DEST)/lib \
 			; \
-		test -e version.h || touch version.h
 
 $(LH_OBJ)/config.status: | $(LH_OBJ) $(LH_SRC)
 	$(LH_SRC)/autogen.sh
@@ -235,7 +234,7 @@ lua: $(SRC)/lua-$(LUA_VER).tar.gz | $(DEST)
 
 # -----------------------------------------------------------------------------
 
-FFMPEG_VER=4.0.2
+FFMPEG_VER=4.1
 $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2: | $(SOURCE)
 	cd $(SRC) && wget http://www.ffmpeg.org/releases/ffmpeg-$(FFMPEG_VER).tar.bz2
 
