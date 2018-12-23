@@ -45,7 +45,7 @@
 
 NEUTRINO = ni-neutrino-hd
 N_BRANCH = ni/mp/tuxbox
-LIBSTB-HAL = ni-libstb-hal-next
+LIBSTB-HAL = ni-libstb-hal
 
 SOURCE = $(PWD)/../source
 ifeq ($(wildcard $(SOURCE)),)
