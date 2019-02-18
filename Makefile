@@ -104,7 +104,8 @@ CFLAGS += $(shell pkg-config --cflags --libs gstreamer-video-1.0)
 PKG_CONFIG_PATH = $(DEST)/lib/pkgconfig
 export PKG_CONFIG_PATH
 
-CXXFLAGS = $(CFLAGS)
+CXXFLAGS  = $(CFLAGS)
+CXXFLAGS +=  -std=c++11
 export CFLAGS CXXFLAGS
 
 # -----------------------------------------------------------------------------
@@ -162,18 +163,19 @@ $(LH_OBJ)/config.status: | $(LH_OBJ) $(LH_SRC)
 # -----------------------------------------------------------------------------
 
 $(OBJ):
-	mkdir $(OBJ)
+	mkdir -p $(OBJ)
 
 $(OBJ)/$(NEUTRINO) \
 $(OBJ)/$(LIBSTB-HAL): | $(OBJ)
-	mkdir $@
+	mkdir -p $@
 
 $(DEST):
-	mkdir $@
+	mkdir -p $@
 	cp --remove-destination -a skel-root/* $(DEST)/
+	cp --remove-destination -a skel-user/* $(DEST)/
 
 $(SRC):
-	mkdir $@
+	mkdir -p $@
 
 $(N_SRC): | $(SOURCE)
 	cd $(SOURCE) && git clone https://bitbucket.org/neutrino-images/$(NEUTRINO).git
@@ -216,11 +218,11 @@ libdvbsi: | $(DEST)
 		make install
 	rm -rf $(SRC)/libdvbsi++
 
+# -----------------------------------------------------------------------------
+
 LUA_VER=5.2.4
 $(SRC)/lua-$(LUA_VER).tar.gz: | $(SRC)
 	cd $(SRC) && wget http://www.lua.org/ftp/lua-$(LUA_VER).tar.gz
-
-# -----------------------------------------------------------------------------
 
 lua: $(SRC)/lua-$(LUA_VER).tar.gz | $(DEST)
 	rm -rf $(SRC)/lua-$(LUA_VER)
@@ -235,10 +237,10 @@ lua: $(SRC)/lua-$(LUA_VER).tar.gz | $(DEST)
 # -----------------------------------------------------------------------------
 
 FFMPEG_VER=4.1
-$(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2: | $(SOURCE)
+$(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2: | $(SRC)
 	cd $(SRC) && wget http://www.ffmpeg.org/releases/ffmpeg-$(FFMPEG_VER).tar.bz2
 
-ffmpeg: $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2
+ffmpeg: $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2 | $(DEST)
 	rm -rf $(SRC)/ffmpeg-$(FFMPEG_VER)
 	tar -C $(SRC) -xf $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2
 	set -e; cd $(SRC)/ffmpeg-$(FFMPEG_VER); \
@@ -249,5 +251,7 @@ ffmpeg: $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2
 
 # -----------------------------------------------------------------------------
 
-PHONY = checkout
+PHONY  = $(DEST)
+PHONY += checkout
+
 .PHONY: $(PHONY)
