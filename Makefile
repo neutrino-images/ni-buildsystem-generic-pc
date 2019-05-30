@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------------------
 #
-# Makefile for building native ni-neutrino-hd and libstb-hal
+# Makefile for building native ni-neutrino and ni-libstb-hal
 #
 # (C) 2012,2013 Stefan Seyfried
 # (C) 2015 Sven Hoefer
@@ -139,8 +139,9 @@ $(N_OBJ)/config.status: | $(N_OBJ) $(N_SRC) libstb-hal
 		git checkout $(N_BRANCH); \
 	$(N_SRC)/autogen.sh
 	set -e; cd $(N_OBJ); \
-		$(N_SRC)/configure --enable-maintainer-mode \
+		$(N_SRC)/configure \
 			--prefix=$(DEST) \
+			--enable-maintainer-mode \
 			--enable-silent-rules \
 			--enable-mdev \
 			--enable-giflib \
@@ -154,8 +155,9 @@ $(N_OBJ)/config.status: | $(N_OBJ) $(N_SRC) libstb-hal
 $(LH_OBJ)/config.status: | $(LH_OBJ) $(LH_SRC)
 	$(LH_SRC)/autogen.sh
 	set -e; cd $(LH_OBJ); \
-		$(LH_SRC)/configure --enable-maintainer-mode \
+		$(LH_SRC)/configure \
 			--prefix=$(DEST) \
+			--enable-maintainer-mode \
 			--enable-shared=no \
 			--enable-gstreamer_10=yes \
 			;
@@ -210,10 +212,12 @@ clean-all: clean
 # libdvbsi is not commonly packaged for linux distributions...
 libdvbsi: | $(DEST)
 	rm -rf $(SRC)/libdvbsi++
-	git clone git://git.opendreambox.org/git/obi/libdvbsi++.git $(SRC)/libdvbsi++
+	git clone git://github.com/OpenDMM/libdvbsi-.git $(SRC)/libdvbsi++
 	set -e; cd $(SRC)/libdvbsi++; \
 		./autogen.sh; \
-		./configure --prefix=$(DEST); \
+		./configure \
+			--prefix=$(DEST) \
+			; \
 		$(MAKE); \
 		make install
 	rm -rf $(SRC)/libdvbsi++
@@ -244,7 +248,17 @@ ffmpeg: $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2 | $(DEST)
 	rm -rf $(SRC)/ffmpeg-$(FFMPEG_VER)
 	tar -C $(SRC) -xf $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2
 	set -e; cd $(SRC)/ffmpeg-$(FFMPEG_VER); \
-		./configure --prefix=$(DEST) --disable-doc --disable-stripping ; \
+		./configure \
+			--prefix=$(DEST) \
+			\
+			--disable-doc \
+			--disable-htmlpages \
+			--disable-manpages \
+			--disable-podpages \
+			--disable-txtpages \
+			\
+			--disable-stripping \
+			; \
 		$(MAKE); \
 		make install
 	rm -rf $(SRC)/ffmpeg-$(FFMPEG_VER)
