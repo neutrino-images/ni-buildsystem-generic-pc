@@ -212,7 +212,7 @@ clean-all: clean
 # libdvbsi is not commonly packaged for linux distributions...
 libdvbsi: | $(DEST)
 	rm -rf $(SRC)/libdvbsi++
-	git clone git://github.com/OpenDMM/libdvbsi-.git $(SRC)/libdvbsi++
+	git clone https://github.com/OpenVisionE2/libdvbsi.git $(SRC)/libdvbsi++
 	set -e; cd $(SRC)/libdvbsi++; \
 		./autogen.sh; \
 		./configure \
