@@ -43,9 +43,10 @@
 #
 # -----------------------------------------------------------------------------
 
-NEUTRINO = ni-neutrino-hd
-N_BRANCH = ni/mp/tuxbox
+NEUTRINO = ni-neutrino
+N_BRANCH = master
 LIBSTB-HAL = ni-libstb-hal
+LH_BRANCH = master
 
 SOURCE = $(PWD)/../source
 ifeq ($(wildcard $(SOURCE)),)
@@ -136,7 +137,7 @@ libstb-hal: $(LH_OBJ)/config.status | $(DEST)
 
 $(N_OBJ)/config.status: | $(N_OBJ) $(N_SRC) libstb-hal
 	set -e; cd $(N_SRC); \
-		git checkout $(N_BRANCH); \
+		git checkout $(N_BRANCH)
 	$(N_SRC)/autogen.sh
 	set -e; cd $(N_OBJ); \
 		$(N_SRC)/configure \
@@ -153,6 +154,8 @@ $(N_OBJ)/config.status: | $(N_OBJ) $(N_SRC) libstb-hal
 			; \
 
 $(LH_OBJ)/config.status: | $(LH_OBJ) $(LH_SRC)
+	set -e; cd $(LH_SRC); \
+		git checkout $(LH_BRANCH)
 	$(LH_SRC)/autogen.sh
 	set -e; cd $(LH_OBJ); \
 		$(LH_SRC)/configure \
