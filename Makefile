@@ -243,7 +243,7 @@ lua: $(SRC)/lua-$(LUA_VER).tar.gz | $(DEST)
 
 # -----------------------------------------------------------------------------
 
-FFMPEG_VER=4.1
+FFMPEG_VER=4.2
 $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2: | $(SRC)
 	cd $(SRC) && wget http://www.ffmpeg.org/releases/ffmpeg-$(FFMPEG_VER).tar.bz2
 
