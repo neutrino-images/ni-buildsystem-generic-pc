@@ -43,6 +43,10 @@
 #
 # -----------------------------------------------------------------------------
 
+-include config.local
+
+BOXMODEL ?= generic
+
 NEUTRINO = ni-neutrino
 N_BRANCH = master
 LIBSTB-HAL = ni-libstb-hal
@@ -149,6 +153,7 @@ $(N_OBJ)/config.status: | $(N_OBJ) $(N_SRC) libstb-hal
 			--enable-cleanup \
 			--with-target=native \
 			--with-boxtype=generic \
+			$(if $(filter $(BOXMODEL), raspi),--with-boxmodel=raspi) \
 			--with-stb-hal-includes=$(LH_SRC)/include \
 			--with-stb-hal-build=$(DEST)/lib \
 			; \
@@ -160,6 +165,9 @@ $(LH_OBJ)/config.status: | $(LH_OBJ) $(LH_SRC)
 	set -e; cd $(LH_OBJ); \
 		$(LH_SRC)/configure \
 			--prefix=$(DEST) \
+			--with-target=native \
+			--with-boxtype=generic \
+			$(if $(filter $(BOXMODEL), raspi),--with-boxmodel=raspi) \
 			--enable-maintainer-mode \
 			--enable-shared=no \
 			--enable-gstreamer_10=yes \

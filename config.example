@@ -1,0 +1,8 @@
+#
+# Local config file
+#
+# -----------------------------------------------------------------------------
+
+# Choose one (1) of the following BOXMODELs. O n e !
+#BOXMODEL = generic
+#BOXMODEL = raspi

@@ -1,4 +1,11 @@
-obj
-root
-skel-user
-src
+#
+# exclude directories explicitly
+#
+/obj
+/root
+/skel-user
+/src
+#
+# exclude files explicitly
+#
+/config.local
