@@ -60,10 +60,12 @@ SRC = $(PWD)/src
 OBJ = $(PWD)/obj
 DEST = $(PWD)/root
 
-LH_SRC = $(SOURCE)/$(LIBSTB-HAL)
-LH_OBJ = $(OBJ)/$(LIBSTB-HAL)
 N_SRC  = $(SOURCE)/$(NEUTRINO)
 N_OBJ  = $(OBJ)/$(NEUTRINO)
+LH_SRC = $(SOURCE)/$(LIBSTB-HAL)
+LH_OBJ = $(OBJ)/$(LIBSTB-HAL)
+
+# -----------------------------------------------------------------------------
 
 CFLAGS  = -W
 CFLAGS += -Wall
@@ -106,16 +108,18 @@ CFLAGS += $(shell pkg-config --cflags --libs gstreamer-1.0)
 CFLAGS += $(shell pkg-config --cflags --libs gstreamer-audio-1.0)
 CFLAGS += $(shell pkg-config --cflags --libs gstreamer-video-1.0)
 
-PKG_CONFIG_PATH = $(DEST)/lib/pkgconfig
-export PKG_CONFIG_PATH
-
 CXXFLAGS  = $(CFLAGS)
 CXXFLAGS +=  -std=c++11
 export CFLAGS CXXFLAGS
 
 # -----------------------------------------------------------------------------
 
-# first target is default...
+PKG_CONFIG_PATH = $(DEST)/lib/pkgconfig
+export PKG_CONFIG_PATH
+
+# -----------------------------------------------------------------------------
+
+# first target is default
 default: neutrino
 
 run:
@@ -178,8 +182,8 @@ $(LH_OBJ)/config.status: | $(LH_OBJ) $(LH_SRC)
 $(OBJ):
 	mkdir -p $(OBJ)
 
-$(OBJ)/$(NEUTRINO) \
-$(OBJ)/$(LIBSTB-HAL): | $(OBJ)
+$(N_OBJ) \
+$(LH_OBJ): | $(OBJ)
 	mkdir -p $@
 
 $(DEST):
@@ -198,11 +202,11 @@ $(LH_SRC): | $(SOURCE)
 
 # -----------------------------------------------------------------------------
 
-checkout: $(SOURCE)/$(LIBSTB-HAL) $(SOURCE)/$(NEUTRINO)
+checkout: $(N_SRC) $(LH_SRC)
 
-update: $(LH_SRC) $(N_SRC)
-	cd $(LH_SRC) && git pull
+update: $(N_SRC) $(LH_SRC)
 	cd $(N_SRC) && git pull
+	cd $(LH_SRC) && git pull
 	git pull
 
 neutrino-clean:
@@ -220,7 +224,7 @@ clean-all: clean
 
 # -----------------------------------------------------------------------------
 
-# libdvbsi is not commonly packaged for linux distributions...
+# libdvbsi is not commonly packaged for linux distributions
 libdvbsi: | $(DEST)
 	rm -rf $(SRC)/libdvbsi++
 	git clone https://github.com/OpenVisionE2/libdvbsi.git $(SRC)/libdvbsi++
@@ -236,6 +240,7 @@ libdvbsi: | $(DEST)
 # -----------------------------------------------------------------------------
 
 LUA_VER=5.2.4
+
 $(SRC)/lua-$(LUA_VER).tar.gz: | $(SRC)
 	cd $(SRC) && wget http://www.lua.org/ftp/lua-$(LUA_VER).tar.gz
 
@@ -252,6 +257,7 @@ lua: $(SRC)/lua-$(LUA_VER).tar.gz | $(DEST)
 # -----------------------------------------------------------------------------
 
 FFMPEG_VER=4.2
+
 $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2: | $(SRC)
 	cd $(SRC) && wget http://www.ffmpeg.org/releases/ffmpeg-$(FFMPEG_VER).tar.bz2
 
