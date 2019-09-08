@@ -188,17 +188,17 @@ $(LH_OBJ): | $(OBJ)
 
 $(DEST):
 	mkdir -p $@
-	cp --remove-destination -a skel-root/* $(DEST)/
-	cp --remove-destination -a skel-user/* $(DEST)/
+	cp --remove-destination -a skel-root/. $(DEST)/
+	cp --remove-destination -a skel-user/. $(DEST)/
 
 $(SRC):
 	mkdir -p $@
 
 $(N_SRC): | $(SOURCE)
-	cd $(SOURCE) && git clone https://bitbucket.org/neutrino-images/$(NEUTRINO).git
+	cd $(SOURCE) && git clone https://github.com/neutrino-images/$(NEUTRINO).git
 
 $(LH_SRC): | $(SOURCE)
-	cd $(SOURCE) && git clone https://bitbucket.org/neutrino-images/$(LIBSTB-HAL).git
+	cd $(SOURCE) && git clone https://github.com/neutrino-images/$(LIBSTB-HAL).git
 
 # -----------------------------------------------------------------------------
 

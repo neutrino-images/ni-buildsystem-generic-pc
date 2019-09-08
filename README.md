@@ -3,7 +3,7 @@
 # 1) Repository clonen #
 ```
 #!bash
-git clone https://bitbucket.org/neutrino-images/ni-build-generic-pc.git
+git clone https://github.com/neutrino-images/ni-build-generic-pc.git
 cd ni-build-generic-pc
 ```
 
