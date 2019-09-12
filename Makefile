@@ -38,6 +38,10 @@
 # apt-get install libjpeg-dev
 # apt-get install libgif-dev
 # apt-get install libflac-dev
+#
+# Optional
+# --------
+#
 # apt-get install libgstreamer1.0-dev
 # apt-get install libgstreamer-plugins-base1.0-dev
 #
@@ -104,9 +108,9 @@ CFLAGS += -I/usr/include/sigc++-2.0
 CFLAGS += -I/usr/lib/x86_64-linux-gnu/sigc++-2.0/include
 
 # gstreamer flags
-CFLAGS += $(shell pkg-config --cflags --libs gstreamer-1.0)
-CFLAGS += $(shell pkg-config --cflags --libs gstreamer-audio-1.0)
-CFLAGS += $(shell pkg-config --cflags --libs gstreamer-video-1.0)
+#CFLAGS += $(shell pkg-config --cflags --libs gstreamer-1.0)
+#CFLAGS += $(shell pkg-config --cflags --libs gstreamer-audio-1.0)
+#CFLAGS += $(shell pkg-config --cflags --libs gstreamer-video-1.0)
 
 CXXFLAGS  = $(CFLAGS)
 CXXFLAGS +=  -std=c++11
@@ -174,7 +178,7 @@ $(LH_OBJ)/config.status: | $(LH_OBJ) $(LH_SRC)
 			$(if $(filter $(BOXMODEL), raspi),--with-boxmodel=raspi) \
 			--enable-maintainer-mode \
 			--enable-shared=no \
-			--enable-gstreamer_10=yes \
+			$(if $(findstring gstreamer,$(CFLAGS)),--enable-gstreamer_10=yes) \
 			;
 
 # -----------------------------------------------------------------------------
