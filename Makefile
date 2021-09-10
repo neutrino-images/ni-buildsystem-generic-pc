@@ -126,6 +126,8 @@ export PKG_CONFIG_PATH
 # first target is default
 default: neutrino
 
+deps: libdvbsi lua ffmpeg
+
 run:
 	export SIMULATE_FE=1; \
 	$(DEST)/bin/neutrino
@@ -147,7 +149,7 @@ neutrino: $(N_OBJ)/config.status | $(DEST)
 libstb-hal: $(LH_OBJ)/config.status | $(DEST)
 	$(MAKE) -C $(LH_OBJ) install
 
-$(N_OBJ)/config.status: | $(N_OBJ) $(N_SRC) libstb-hal
+$(N_OBJ)/config.status: deps | $(N_OBJ) $(N_SRC) libstb-hal
 	set -e; cd $(N_SRC); \
 		git checkout $(N_BRANCH)
 	$(N_SRC)/autogen.sh
@@ -166,7 +168,7 @@ $(N_OBJ)/config.status: | $(N_OBJ) $(N_SRC) libstb-hal
 			--with-stb-hal-build=$(DEST)/lib \
 			; \
 
-$(LH_OBJ)/config.status: | $(LH_OBJ) $(LH_SRC)
+$(LH_OBJ)/config.status: deps | $(LH_OBJ) $(LH_SRC)
 	set -e; cd $(LH_SRC); \
 		git checkout $(LH_BRANCH)
 	$(LH_SRC)/autogen.sh
@@ -260,7 +262,7 @@ lua: $(SRC)/lua-$(LUA_VER).tar.gz | $(DEST)
 
 # -----------------------------------------------------------------------------
 
-FFMPEG_VER=4.2.1
+FFMPEG_VER=4.3.2
 
 $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2: | $(SRC)
 	cd $(SRC) && wget http://www.ffmpeg.org/releases/ffmpeg-$(FFMPEG_VER).tar.bz2
