@@ -1,4 +1,4 @@
-**NI-Neutrino für PC bauen**
+**NI-Neutrino fÃ¼r PC bauen**
 
 # 1) Repository clonen #
 ```
@@ -7,10 +7,15 @@ git clone https://github.com/neutrino-images/ni-build-generic-pc.git
 cd ni-build-generic-pc
 ```
 
-# 2) Prerequisites und Dependencies erfüllen. #
+# 2) Prerequisites und Dependencies erfÃ¼llen. #
 Siehe Makefile!
 
 # 3) libdvbsi++, lua und ffmpeg bauen #
+```
+#!bash
+make deps
+```
+oder
 ```
 #!bash
 make libdvbsi lua ffmpeg
