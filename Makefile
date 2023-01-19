@@ -156,7 +156,7 @@ neutrino: $(N_OBJ)/config.status | $(ROOT)
 libstb-hal: $(LH_OBJ)/config.status | $(ROOT)
 	$(MAKE) -C $(LH_OBJ) install
 
-$(N_OBJ)/config.status: | $(N_OBJ) $(N_SRC) libstb-hal
+$(N_OBJ)/config.status: libstb-hal | $(N_OBJ) $(N_SRC)
 	set -e; cd $(N_SRC); \
 		git checkout $(N_BRANCH)
 	$(N_SRC)/autogen.sh
@@ -177,7 +177,7 @@ $(N_OBJ)/config.status: | $(N_OBJ) $(N_SRC) libstb-hal
 			--with-stb-hal-build=$(ROOT)/lib \
 			; \
 
-$(LH_OBJ)/config.status: | $(LH_OBJ) $(LH_SRC)
+$(LH_OBJ)/config.status: deps | $(LH_OBJ) $(LH_SRC)
 	set -e; cd $(LH_SRC); \
 		git checkout $(LH_BRANCH)
 	$(LH_SRC)/autogen.sh
