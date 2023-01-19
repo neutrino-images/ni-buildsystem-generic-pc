@@ -31,13 +31,15 @@
 # apt-get install libao-dev
 # apt-get install libid3tag0-dev
 # apt-get install libmad0-dev
-# apt-get install libcurl4-openssl-dev
+# apt-get install libogg-dev
 # apt-get install libfreetype6-dev
 # apt-get install libsigc++-2.0-dev
-# apt-get install libreadline6-dev
 # apt-get install libjpeg-dev
 # apt-get install libgif-dev
+# apt-get install libvorbis-dev
 # apt-get install libflac-dev
+# apt-get install libcurl4-openssl-dev
+# apt-get install libreadline6-dev
 #
 # Optional
 # --------
@@ -62,12 +64,16 @@ ifeq ($(wildcard $(SOURCE)),)
 endif
 SRC = $(PWD)/src
 OBJ = $(PWD)/obj
-DEST = $(PWD)/root
+ROOT = $(PWD)/root
+DEPS = $(PWD)/deps
 
 N_SRC  = $(SOURCE)/$(NEUTRINO)
 N_OBJ  = $(OBJ)/$(NEUTRINO)
 LH_SRC = $(SOURCE)/$(LIBSTB-HAL)
 LH_OBJ = $(OBJ)/$(LIBSTB-HAL)
+
+# search path(s) for all prerequisites
+VPATH = $(DEPS)
 
 # -----------------------------------------------------------------------------
 
@@ -95,13 +101,14 @@ CFLAGS += -D__STDC_FORMAT_MACROS
 CFLAGS += -D__STDC_CONSTANT_MACROS
 CFLAGS += -DASSUME_MDEV
 CFLAGS += -DTEST_MENU
+
 # enable --as-needed for catching more build problems...
 CFLAGS += -Wl,--as-needed
 
-# in case some libs are installed in $(DEST) (e.g. dvbsi++)
-CFLAGS += -I$(DEST)/include
-CFLAGS += -L$(DEST)/lib
-CFLAGS += -L$(DEST)/lib64
+# in case some libs are installed in $(ROOT) (e.g. dvbsi++)
+CFLAGS += -I$(ROOT)/include
+CFLAGS += -L$(ROOT)/lib
+CFLAGS += -L$(ROOT)/lib64
 
 # workaround for debian's non-std sigc++ locations
 CFLAGS += -I/usr/include/sigc++-2.0
@@ -118,7 +125,7 @@ export CFLAGS CXXFLAGS
 
 # -----------------------------------------------------------------------------
 
-PKG_CONFIG_PATH = $(DEST)/lib/pkgconfig
+PKG_CONFIG_PATH = $(ROOT)/lib/pkgconfig
 export PKG_CONFIG_PATH
 
 # -----------------------------------------------------------------------------
@@ -130,57 +137,61 @@ deps: libdvbsi lua ffmpeg
 
 run:
 	export SIMULATE_FE=1; \
-	$(DEST)/bin/neutrino
+	$(ROOT)/bin/neutrino
 
 run-gdb:
 	export SIMULATE_FE=1; \
-	gdb -ex run $(DEST)/bin/neutrino
+	gdb -ex run $(ROOT)/bin/neutrino
 
 run-valgrind:
 	export SIMULATE_FE=1; \
-	valgrind --leak-check=full --log-file="$(DEST)/valgrind.log" -v $(DEST)/bin/neutrino
+	valgrind --leak-check=full --log-file="$(ROOT)/valgrind.log" -v $(ROOT)/bin/neutrino
 
 # -----------------------------------------------------------------------------
 
-neutrino: $(N_OBJ)/config.status | $(DEST)
+neutrino: $(N_OBJ)/config.status | $(ROOT)
 	-rm $(N_OBJ)/src/neutrino # force relinking on changed libstb-hal
 	$(MAKE) -C $(N_OBJ) install
 
-libstb-hal: $(LH_OBJ)/config.status | $(DEST)
+libstb-hal: $(LH_OBJ)/config.status | $(ROOT)
 	$(MAKE) -C $(LH_OBJ) install
 
-$(N_OBJ)/config.status: deps | $(N_OBJ) $(N_SRC) libstb-hal
+$(N_OBJ)/config.status: | $(N_OBJ) $(N_SRC) libstb-hal
 	set -e; cd $(N_SRC); \
 		git checkout $(N_BRANCH)
 	$(N_SRC)/autogen.sh
 	set -e; cd $(N_OBJ); \
 		$(N_SRC)/configure \
-			--prefix=$(DEST) \
+			--prefix=$(ROOT) \
+			\
 			--enable-maintainer-mode \
 			--enable-silent-rules \
 			--enable-mdev \
 			--enable-giflib \
 			--enable-cleanup \
+			\
 			--with-target=native \
 			--with-boxtype=generic \
 			$(if $(filter $(BOXMODEL), raspi),--with-boxmodel=raspi) \
 			--with-stb-hal-includes=$(LH_SRC)/include \
-			--with-stb-hal-build=$(DEST)/lib \
+			--with-stb-hal-build=$(ROOT)/lib \
 			; \
 
-$(LH_OBJ)/config.status: deps | $(LH_OBJ) $(LH_SRC)
+$(LH_OBJ)/config.status: | $(LH_OBJ) $(LH_SRC)
 	set -e; cd $(LH_SRC); \
 		git checkout $(LH_BRANCH)
 	$(LH_SRC)/autogen.sh
 	set -e; cd $(LH_OBJ); \
 		$(LH_SRC)/configure \
-			--prefix=$(DEST) \
-			--with-target=native \
-			--with-boxtype=generic \
-			$(if $(filter $(BOXMODEL), raspi),--with-boxmodel=raspi) \
+			--prefix=$(ROOT) \
+			\
 			--enable-maintainer-mode \
 			--enable-shared=no \
 			$(if $(findstring gstreamer,$(CFLAGS)),--enable-gstreamer_10=yes) \
+			\
+			--with-target=native \
+			--with-boxtype=generic \
+			$(if $(filter $(BOXMODEL), raspi),--with-boxmodel=raspi) \
 			;
 
 # -----------------------------------------------------------------------------
@@ -192,11 +203,12 @@ $(N_OBJ) \
 $(LH_OBJ): | $(OBJ)
 	mkdir -p $@
 
-$(DEST):
+$(ROOT):
 	mkdir -p $@
-	cp --remove-destination -a skel-root/. $(DEST)/
-	cp --remove-destination -a skel-user/. $(DEST)/
+	cp --remove-destination -a skel-root/. $(ROOT)/
+	cp --remove-destination -a skel-user/. $(ROOT)/
 
+$(DEPS) \
 $(SRC):
 	mkdir -p $@
 
@@ -207,8 +219,6 @@ $(LH_SRC): | $(SOURCE)
 	cd $(SOURCE) && git clone https://github.com/neutrino-images/$(LIBSTB-HAL).git
 
 # -----------------------------------------------------------------------------
-
-checkout: $(N_SRC) $(LH_SRC)
 
 update: $(N_SRC) $(LH_SRC)
 	cd $(N_SRC) && git pull
@@ -225,54 +235,71 @@ libstb-hal-clean:
 
 clean: neutrino-clean libstb-hal-clean
 
-clean-all: clean
-	rm -rf $(DEST)
+clean-all:
+	rm -rf $(OBJ)
+	rm -rf $(DEPS)
+	rm -rf $(ROOT)
 
 # -----------------------------------------------------------------------------
 
 # libdvbsi is not commonly packaged for linux distributions
-libdvbsi: | $(DEST)
-	rm -rf $(SRC)/libdvbsi++
-	git clone https://github.com/OpenVisionE2/libdvbsi.git $(SRC)/libdvbsi++
-	set -e; cd $(SRC)/libdvbsi++; \
+LIBDVBSI_VERSION = 0.3.9
+LIBDVBSI_DIR = libdvbsi++-$(LIBDVBSI_VERSION)
+LIBDVBSI_SOURCE = libdvbsi++-$(LIBDVBSI_VERSION).tar.bz2
+LIBDVBSI_SITE = https://github.com/mtdcr/libdvbsi/releases/download/$(LIBDVBSI_VERSION)
+
+$(SRC)/$(LIBDVBSI_SOURCE): | $(SRC)
+	cd $(SRC) && wget $(LIBDVBSI_SITE)/$(LIBDVBSI_SOURCE)
+
+libdvbsi: $(SRC)/$(LIBDVBSI_SOURCE) | $(DEPS) $(ROOT)
+	rm -rf $(SRC)/$(LIBDVBSI_DIR)
+	tar -C $(SRC) -xf $(SRC)/$(LIBDVBSI_SOURCE)
+	set -e; cd $(SRC)/$(LIBDVBSI_DIR); \
 		./autogen.sh; \
 		./configure \
-			--prefix=$(DEST) \
+			--prefix=$(ROOT) \
 			; \
 		$(MAKE); \
 		make install
-	rm -rf $(SRC)/libdvbsi++
+	rm -rf $(SRC)/$(LIBDVBSI_DIR)
+	touch $(DEPS)/$(@)
 
 # -----------------------------------------------------------------------------
 
-LUA_VER=5.2.4
+LUA_VERSION = 5.2.4
+LUA_DIR = lua-$(LUA_VERSION)
+LUA_SOURCE = lua-$(LUA_VERSION).tar.gz
+LUA_SITE = https://www.lua.org/ftp
 
-$(SRC)/lua-$(LUA_VER).tar.gz: | $(SRC)
-	cd $(SRC) && wget http://www.lua.org/ftp/lua-$(LUA_VER).tar.gz
+$(SRC)/$(LUA_SOURCE): | $(SRC)
+	cd $(SRC) && wget $(LUA_SITE)/$(LUA_SOURCE)
 
-lua: $(SRC)/lua-$(LUA_VER).tar.gz | $(DEST)
-	rm -rf $(SRC)/lua-$(LUA_VER)
-	tar -C $(SRC) -xf $(SRC)/lua-$(LUA_VER).tar.gz
-	set -e;	cd $(SRC)/lua-$(LUA_VER); \
-		sed -i "s|^#define LUA_ROOT	.*|#define LUA_ROOT	\"$(DEST)/\"|" src/luaconf.h && \
+lua: $(SRC)/$(LUA_SOURCE) | $(DEPS) $(ROOT)
+	rm -rf $(SRC)/$(LUA_DIR)
+	tar -C $(SRC) -xf $(SRC)/$(LUA_SOURCE)
+	set -e;	cd $(SRC)/$(LUA_DIR); \
+		sed -i "s|^#define LUA_ROOT	.*|#define LUA_ROOT	\"$(ROOT)/\"|" src/luaconf.h && \
 		$(MAKE) linux; \
-		make install INSTALL_TOP=$(DEST)
-	rm -rf $(SRC)/lua-$(LUA_VER)
-	rm -rf $(DEST)/man
+		make install INSTALL_TOP=$(ROOT)
+	rm -rf $(SRC)/$(LUA_DIR)
+	touch $(DEPS)/$(@)
 
 # -----------------------------------------------------------------------------
 
-FFMPEG_VER=4.3.2
+FFMPEG_VERSION = 4.4.2
+FFMPEG_DIR = ffmpeg-$(FFMPEG_VERSION)
+FFMPEG_SOURCE = ffmpeg-$(FFMPEG_VERSION).tar.xz
+FFMPEG_SITE = http://www.ffmpeg.org/releases
 
-$(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2: | $(SRC)
-	cd $(SRC) && wget http://www.ffmpeg.org/releases/ffmpeg-$(FFMPEG_VER).tar.bz2
+$(SRC)/$(FFMPEG_SOURCE): | $(SRC)
+	cd $(SRC) && wget $(FFMPEG_SITE)/$(FFMPEG_SOURCE)
 
-ffmpeg: $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2 | $(DEST)
-	rm -rf $(SRC)/ffmpeg-$(FFMPEG_VER)
-	tar -C $(SRC) -xf $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2
-	set -e; cd $(SRC)/ffmpeg-$(FFMPEG_VER); \
+ffmpeg: $(SRC)/$(FFMPEG_SOURCE) | $(DEPS) $(ROOT)
+	rm -rf $(SRC)/$(FFMPEG_DIR)
+	tar -C $(SRC) -xf $(SRC)/$(FFMPEG_SOURCE)
+	set -e; cd $(SRC)/$(FFMPEG_DIR); \
 		./configure \
-			--prefix=$(DEST) \
+			--prefix=$(ROOT) \
 			\
 			--disable-doc \
 			--disable-htmlpages \
@@ -281,14 +308,15 @@ ffmpeg: $(SRC)/ffmpeg-$(FFMPEG_VER).tar.bz2 | $(DEST)
 			--disable-txtpages \
 			\
 			--disable-stripping \
+			--disable-x86asm \
 			; \
 		$(MAKE); \
 		make install
-	rm -rf $(SRC)/ffmpeg-$(FFMPEG_VER)
+	rm -rf $(SRC)/$(FFMPEG_DIR)
+	touch $(DEPS)/$(@)
 
 # -----------------------------------------------------------------------------
 
-PHONY  = $(DEST)
-PHONY += checkout
+#PHONY =
 
 .PHONY: $(PHONY)
