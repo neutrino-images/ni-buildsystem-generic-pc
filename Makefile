@@ -72,6 +72,8 @@ N_OBJ  = $(OBJ)/$(NEUTRINO)
 LH_SRC = $(SOURCE)/$(LIBSTB-HAL)
 LH_OBJ = $(OBJ)/$(LIBSTB-HAL)
 
+prefix = /usr
+
 # search path(s) for all prerequisites
 VPATH = $(DEPS)
 
@@ -105,10 +107,10 @@ CFLAGS += -DTEST_MENU
 # enable --as-needed for catching more build problems...
 CFLAGS += -Wl,--as-needed
 
-# in case some libs are installed in $(ROOT) (e.g. dvbsi++)
-CFLAGS += -I$(ROOT)/include
-CFLAGS += -L$(ROOT)/lib
-CFLAGS += -L$(ROOT)/lib64
+# in case some libs are installed in $(ROOT)$(prefix) (e.g. libdvbsi++)
+CFLAGS += -I$(ROOT)$(prefix)/include
+CFLAGS += -L$(ROOT)$(prefix)/lib
+CFLAGS += -L$(ROOT)$(prefix)/lib64
 
 # workaround for debian's non-std sigc++ locations
 CFLAGS += -I/usr/include/sigc++-2.0
@@ -125,7 +127,7 @@ export CFLAGS CXXFLAGS
 
 # -----------------------------------------------------------------------------
 
-PKG_CONFIG_PATH = $(ROOT)/lib/pkgconfig
+PKG_CONFIG_PATH = $(ROOT)$(prefix)/lib/pkgconfig
 export PKG_CONFIG_PATH
 
 # -----------------------------------------------------------------------------
@@ -137,15 +139,15 @@ deps: libdvbsi lua ffmpeg
 
 run:
 	export SIMULATE_FE=1; \
-	$(ROOT)/bin/neutrino
+	$(ROOT)$(prefix)/bin/neutrino
 
 run-gdb:
 	export SIMULATE_FE=1; \
-	gdb -ex run $(ROOT)/bin/neutrino
+	gdb -ex run $(ROOT)$(prefix)/bin/neutrino
 
 run-valgrind:
 	export SIMULATE_FE=1; \
-	valgrind --leak-check=full --log-file="$(ROOT)/valgrind.log" -v $(ROOT)/bin/neutrino
+	valgrind --leak-check=full --log-file="$(ROOT)/valgrind.log" -v $(ROOT)$(prefix)/bin/neutrino
 
 # -----------------------------------------------------------------------------
 
@@ -162,7 +164,9 @@ $(N_OBJ)/config.status: libstb-hal | $(N_OBJ) $(N_SRC)
 	$(N_SRC)/autogen.sh
 	set -e; cd $(N_OBJ); \
 		$(N_SRC)/configure \
-			--prefix=$(ROOT) \
+			--prefix=$(ROOT)$(prefix) \
+			--sysconfdir=$(ROOT)/etc \
+			--localstatedir=$(ROOT)/var \
 			\
 			--enable-maintainer-mode \
 			--enable-silent-rules \
@@ -171,10 +175,11 @@ $(N_OBJ)/config.status: libstb-hal | $(N_OBJ) $(N_SRC)
 			--enable-cleanup \
 			\
 			--with-target=native \
+			--with-targetroot=$(ROOT) \
 			--with-boxtype=generic \
 			$(if $(filter $(BOXMODEL), raspi),--with-boxmodel=raspi) \
 			--with-stb-hal-includes=$(LH_SRC)/include \
-			--with-stb-hal-build=$(ROOT)/lib \
+			--with-stb-hal-build=$(ROOT)$(prefix)/lib \
 			; \
 
 $(LH_OBJ)/config.status: deps | $(LH_OBJ) $(LH_SRC)
@@ -183,7 +188,7 @@ $(LH_OBJ)/config.status: deps | $(LH_OBJ) $(LH_SRC)
 	$(LH_SRC)/autogen.sh
 	set -e; cd $(LH_OBJ); \
 		$(LH_SRC)/configure \
-			--prefix=$(ROOT) \
+			--prefix=$(ROOT)$(prefix) \
 			\
 			--enable-maintainer-mode \
 			--enable-shared=no \
@@ -257,7 +262,7 @@ libdvbsi: $(SRC)/$(LIBDVBSI_SOURCE) | $(DEPS) $(ROOT)
 	set -e; cd $(SRC)/$(LIBDVBSI_DIR); \
 		./autogen.sh; \
 		./configure \
-			--prefix=$(ROOT) \
+			--prefix=$(ROOT)$(prefix) \
 			; \
 		$(MAKE); \
 		make install
@@ -278,9 +283,9 @@ lua: $(SRC)/$(LUA_SOURCE) | $(DEPS) $(ROOT)
 	rm -rf $(SRC)/$(LUA_DIR)
 	tar -C $(SRC) -xf $(SRC)/$(LUA_SOURCE)
 	set -e;	cd $(SRC)/$(LUA_DIR); \
-		sed -i "s|^#define LUA_ROOT	.*|#define LUA_ROOT	\"$(ROOT)/\"|" src/luaconf.h && \
+		sed -i "s|^#define LUA_ROOT	.*|#define LUA_ROOT	\"$(ROOT)$(prefix)/\"|" src/luaconf.h && \
 		$(MAKE) linux; \
-		make install INSTALL_TOP=$(ROOT)
+		make install INSTALL_TOP=$(ROOT)$(prefix)
 	rm -rf $(SRC)/$(LUA_DIR)
 	touch $(DEPS)/$(@)
 
@@ -299,7 +304,7 @@ ffmpeg: $(SRC)/$(FFMPEG_SOURCE) | $(DEPS) $(ROOT)
 	tar -C $(SRC) -xf $(SRC)/$(FFMPEG_SOURCE)
 	set -e; cd $(SRC)/$(FFMPEG_DIR); \
 		./configure \
-			--prefix=$(ROOT) \
+			--prefix=$(ROOT)$(prefix) \
 			\
 			--disable-doc \
 			--disable-htmlpages \
