@@ -210,6 +210,9 @@ $(LH_OBJ): | $(OBJ)
 
 $(ROOT):
 	mkdir -p $@
+	mkdir -p $(ROOT)/etc
+	mkdir -p $(ROOT)/media/sda1/{epg,logos,movies,music,pictures,plugins,streamripper}
+	echo "imagename=NI \o/ Neutrino Generic-PC" > $(ROOT)/.version
 	cp --remove-destination -a skel-root/. $(ROOT)/
 	cp --remove-destination -a skel-user/. $(ROOT)/
 
