@@ -195,6 +195,7 @@ $(LH_OBJ)/config.status: deps | $(LH_OBJ) $(LH_SRC)
 			$(if $(findstring gstreamer,$(CFLAGS)),--enable-gstreamer_10=yes) \
 			\
 			--with-target=native \
+			--with-targetroot=$(ROOT) \
 			--with-boxtype=generic \
 			$(if $(filter $(BOXMODEL), raspi),--with-boxmodel=raspi) \
 			;
