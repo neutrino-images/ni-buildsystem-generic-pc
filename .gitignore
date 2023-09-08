@@ -1,6 +1,7 @@
 #
 # exclude directories explicitly
 #
+/.deps
 /obj
 /root
 /skel-user

@@ -65,7 +65,7 @@ endif
 SRC = $(PWD)/src
 OBJ = $(PWD)/obj
 ROOT = $(PWD)/root
-DEPS = $(PWD)/deps
+DEPS = $(PWD)/.deps
 
 N_SRC  = $(SOURCE)/$(NEUTRINO)
 N_OBJ  = $(OBJ)/$(NEUTRINO)
@@ -246,8 +246,9 @@ clean: neutrino-clean libstb-hal-clean
 
 clean-all:
 	rm -rf $(OBJ)
-	rm -rf $(DEPS)
 	rm -rf $(ROOT)
+	rm -rf $(DEPS)
+	rm -rf deps
 
 # -----------------------------------------------------------------------------
 
