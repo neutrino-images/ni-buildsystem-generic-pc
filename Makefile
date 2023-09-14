@@ -178,9 +178,13 @@ run-valgrind:
 $(BUILD_DIR) \
 $(DEPS_DIR) \
 $(ARCHIVE_DIR) \
-$(SOURCE_DIR) \
 $(SKEL_DIR):
 	mkdir -p $(@)
+
+ifneq ($(ARCHIVE_DIR),$(SOURCE_DIR))
+$(SOURCE_DIR):
+	mkdir -p $(@)
+endif
 
 $(TARGET_DIR): | $(SKEL_DIR)
 	mkdir -p $(@)
