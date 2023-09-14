@@ -2,8 +2,8 @@
 
 ## 1) Repository clonen
 ```bash
-git clone https://github.com/neutrino-images/ni-build-generic-pc.git
-cd ni-build-generic-pc
+git clone https://github.com/neutrino-images/ni-buildsystem-generic-pc.git
+cd ni-buildsystem-generic-pc
 ```
 
 ## 2) Prerequisites und Dependencies erfüllen.
