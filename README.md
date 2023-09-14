@@ -9,7 +9,13 @@ cd ni-build-generic-pc
 ## 2) Prerequisites und Dependencies erfüllen.
 Siehe Makefile!
 
-## 3) libdvbsi++, lua und ffmpeg bauen.
+
+## 3) Build konfigurieren
+```bash
+make local-files
+```
+
+## 4) libdvbsi++, lua und ffmpeg bauen.
 ```bash
 make deps
 ```
@@ -18,17 +24,17 @@ oder
 make libdvbsi lua ffmpeg
 ```
 
-## 4) Neutrino bauen
+## 5) Neutrino bauen
 ```bash
 make neutrino
 ```
 
-## 5) Neutrino starten
+## 6) Neutrino starten
 ```bash
 make run
 ```
 
-## 6) Aktualisieren und sauber machen
+## 7) Aktualisieren und sauber machen
 ```bash
 make update
 make clean

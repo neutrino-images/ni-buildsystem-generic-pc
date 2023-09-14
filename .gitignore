@@ -1,11 +1,11 @@
 #
 # exclude directories explicitly
 #
+/.build
 /.deps
-/obj
+/archive
 /root
-/skel-user
-/src
+/skel
 #
 # exclude files explicitly
 #

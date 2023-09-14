@@ -1,15 +1,17 @@
-# -----------------------------------------------------------------------------
+################################################################################
 #
 # Makefile for building native ni-neutrino and ni-libstb-hal
 #
+################################################################################
+#
 # (C) 2012,2013 Stefan Seyfried
-# (C) 2015 Sven Hoefer
+# (C) 2015-2023 Sven Hoefer
 #
-# prerequisite packages need to be installed, no checking is done for that
+# This is a 'stand-alone' Makefile that works outside of NI \o/ Buildsystem too.
 #
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #
-# This is a 'stand-alone' Makefile that works outside of our buildsystem too.
+# Prerequisite packages need to be installed, no checking is done for that
 #
 # Prerequisits
 # ------------
@@ -47,37 +49,28 @@
 # apt-get install libgstreamer1.0-dev
 # apt-get install libgstreamer-plugins-base1.0-dev
 #
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 -include config.local
 
 BOXMODEL ?= generic
 
-NEUTRINO = ni-neutrino
-N_BRANCH = master
-LIBSTB-HAL = ni-libstb-hal
-LH_BRANCH = master
-
-SOURCE = $(PWD)/../source
-ifeq ($(wildcard $(SOURCE)),)
-  SOURCE = $(PWD)/src
+BUILD_DIR = $(PWD)/.build
+DEPS_DIR = $(PWD)/.deps
+ARCHIVE_DIR = $(PWD)/archive
+TARGET_DIR = $(PWD)/root
+SOURCE_DIR = $(PWD)/../source
+ifeq ($(wildcard $(SOURCE_DIR)),)
+  SOURCE_DIR = $(ARCHIVE_DIR)
 endif
-SRC = $(PWD)/src
-OBJ = $(PWD)/obj
-ROOT = $(PWD)/root
-DEPS = $(PWD)/.deps
-
-N_SRC  = $(SOURCE)/$(NEUTRINO)
-N_OBJ  = $(OBJ)/$(NEUTRINO)
-LH_SRC = $(SOURCE)/$(LIBSTB-HAL)
-LH_OBJ = $(OBJ)/$(LIBSTB-HAL)
+SKEL_DIR = $(PWD)/skel
 
 prefix = /usr
 
 # search path(s) for all prerequisites
-VPATH = $(DEPS)
+VPATH = $(DEPS_DIR)
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 CFLAGS  = -W
 CFLAGS += -Wall
@@ -107,10 +100,10 @@ CFLAGS += -DTEST_MENU
 # enable --as-needed for catching more build problems...
 CFLAGS += -Wl,--as-needed
 
-# in case some libs are installed in $(ROOT)$(prefix) (e.g. libdvbsi++)
-CFLAGS += -I$(ROOT)$(prefix)/include
-CFLAGS += -L$(ROOT)$(prefix)/lib
-CFLAGS += -L$(ROOT)$(prefix)/lib64
+# in case some libs are installed in $(TARGET_DIR)$(prefix) (e.g. libdvbsi++)
+CFLAGS += -I$(TARGET_DIR)$(prefix)/include
+CFLAGS += -L$(TARGET_DIR)$(prefix)/lib
+CFLAGS += -L$(TARGET_DIR)$(prefix)/lib64
 
 # workaround for debian's non-std sigc++ locations
 CFLAGS += -I/usr/include/sigc++-2.0
@@ -125,48 +118,100 @@ CXXFLAGS  = $(CFLAGS)
 CXXFLAGS +=  -std=c++11
 export CFLAGS CXXFLAGS
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-PKG_CONFIG_PATH = $(ROOT)$(prefix)/lib/pkgconfig
+PKG_CONFIG_PATH = $(TARGET_DIR)$(prefix)/lib/pkgconfig
 export PKG_CONFIG_PATH
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 # first target is default
 default: neutrino
+
+local-files: config.local $(SKEL_DIR) 
+
+config.local:
+	@clear
+	@echo ""
+	@echo "    ###   ###  ###"
+	@echo "     ###   ##  ##"
+	@echo "     ####  ##  ##"
+	@echo "     ## ## ##  ##"
+	@echo "     ##  ####  ##"
+	@echo "     ##   ###  ##"
+	@echo "     ##    ##  ##      http://www.neutrino-images.de"
+	@echo "            #"
+	@echo ""
+	@echo "   -------------------------------------------------"
+	@echo ""
+	@echo "   1)  Generic-PC"
+	@echo "   2)  Raspberry Pi"
+	@echo ""
+	@read -p "Select your boxmodel? [default: 1] " boxmodel; \
+	boxmodel=$${boxmodel:-1}; \
+	case "$$boxmodel" in \
+		 1)	boxmodel=generic;; \
+		 2)	boxmodel=raspi;; \
+		*)	boxmodel=generic;; \
+	esac; \
+	install -m 0644 config.example $(@); \
+	sed -i -e "s|^#BOXMODEL = $$boxmodel|BOXMODEL = $$boxmodel|" $(@)
+
+# ------------------------------------------------------------------------------
 
 deps: libdvbsi lua ffmpeg
 
 run:
 	export SIMULATE_FE=1; \
-	$(ROOT)$(prefix)/bin/neutrino
+	$(TARGET_DIR)$(prefix)/bin/neutrino
 
 run-gdb:
 	export SIMULATE_FE=1; \
-	gdb -ex run $(ROOT)$(prefix)/bin/neutrino
+	gdb -ex run $(TARGET_DIR)$(prefix)/bin/neutrino
 
 run-valgrind:
 	export SIMULATE_FE=1; \
-	valgrind --leak-check=full --log-file="$(ROOT)/valgrind.log" -v $(ROOT)$(prefix)/bin/neutrino
+	valgrind --leak-check=full --log-file="$(TARGET_DIR)/valgrind.log" -v $(TARGET_DIR)$(prefix)/bin/neutrino
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-neutrino: $(N_OBJ)/config.status | $(ROOT)
-	-rm $(N_OBJ)/src/neutrino # force relinking on changed libstb-hal
-	$(MAKE) -C $(N_OBJ) install
+$(BUILD_DIR) \
+$(DEPS_DIR) \
+$(ARCHIVE_DIR) \
+$(SOURCE_DIR) \
+$(SKEL_DIR):
+	mkdir -p $(@)
 
-libstb-hal: $(LH_OBJ)/config.status | $(ROOT)
-	$(MAKE) -C $(LH_OBJ) install
+$(TARGET_DIR): | $(SKEL_DIR)
+	mkdir -p $(@)
+	mkdir -p $(@)/etc
+	mkdir -p $(@)/media/sda1/{epg,logos,movies,music,pictures,plugins,streamripper}
+	echo "imagename=NI \o/ Neutrino Generic-PC" > $(@)/.version
+	cp --remove-destination -a $(SKEL_DIR)/. $(@)/
 
-$(N_OBJ)/config.status: libstb-hal | $(N_OBJ) $(N_SRC)
-	set -e; cd $(N_SRC); \
-		git checkout $(N_BRANCH)
-	$(N_SRC)/autogen.sh
-	set -e; cd $(N_OBJ); \
-		$(N_SRC)/configure \
-			--prefix=$(ROOT)$(prefix) \
-			--sysconfdir=$(ROOT)/etc \
-			--localstatedir=$(ROOT)/var \
+# ------------------------------------------------------------------------------
+
+NEUTRINO_VERSION = master
+NEUTRINO_DIR = ni-neutrino
+NEUTRINO_SOURCE = ni-neutrino
+NEUTRINO_SITE = https://github.com/neutrino-images
+
+NEUTRINO_SOURCE_DIR = $(SOURCE_DIR)/$(NEUTRINO_SOURCE)
+NEUTRINO_OBJ_DIR = $(BUILD_DIR)/$(NEUTRINO_DIR)-obj
+NEUTRINO_CONFIG_STATUS = $(NEUTRINO_OBJ_DIR)/config.status
+
+$(NEUTRINO_SOURCE_DIR): | $(SOURCE_DIR)
+	cd $(SOURCE_DIR); git clone $(NEUTRINO_SITE)/$(NEUTRINO_SOURCE).git
+
+$(NEUTRINO_CONFIG_STATUS): libstb-hal | $(NEUTRINO_SOURCE_DIR) $(NEUTRINO_OBJ_DIR)
+	set -e; cd $(NEUTRINO_SOURCE_DIR); \
+		git checkout $(NEUTRINO_VERSION)
+	$(NEUTRINO_SOURCE_DIR)/autogen.sh
+	set -e; cd $(NEUTRINO_OBJ_DIR); \
+		$(NEUTRINO_SOURCE_DIR)/configure \
+			--prefix=$(TARGET_DIR)$(prefix) \
+			--sysconfdir=$(TARGET_DIR)/etc \
+			--localstatedir=$(TARGET_DIR)/var \
 			\
 			--enable-maintainer-mode \
 			--enable-silent-rules \
@@ -175,82 +220,86 @@ $(N_OBJ)/config.status: libstb-hal | $(N_OBJ) $(N_SRC)
 			--enable-cleanup \
 			\
 			--with-target=native \
-			--with-targetroot=$(ROOT) \
+			--with-targetroot=$(TARGET_DIR) \
 			--with-boxtype=generic \
 			$(if $(filter $(BOXMODEL), raspi),--with-boxmodel=raspi) \
-			--with-stb-hal-includes=$(LH_SRC)/include \
-			--with-stb-hal-build=$(ROOT)$(prefix)/lib \
+			--with-stb-hal-includes=$(LIBSTB_HAL_SOURCE_DIR)/include \
+			--with-stb-hal-build=$(TARGET_DIR)$(prefix)/lib \
 			; \
 
-$(LH_OBJ)/config.status: deps | $(LH_OBJ) $(LH_SRC)
-	set -e; cd $(LH_SRC); \
-		git checkout $(LH_BRANCH)
-	$(LH_SRC)/autogen.sh
-	set -e; cd $(LH_OBJ); \
-		$(LH_SRC)/configure \
-			--prefix=$(ROOT)$(prefix) \
+neutrino: $(NEUTRINO_CONFIG_STATUS) | $(TARGET_DIR)
+	-rm $(NEUTRINO_OBJ_DIR)/src/neutrino # force relinking on changed libstb-hal
+	$(MAKE) -C $(NEUTRINO_OBJ_DIR) install
+
+neutrino.clean:
+	-$(MAKE) -C $(NEUTRINO_OBJ_DIR) clean
+	rm -rf $(NEUTRINO_OBJ_DIR)
+
+# ------------------------------------------------------------------------------
+
+LIBSTB_HAL_VERSION = master
+LIBSTB_HAL_DIR = ni-libstb-hal
+LIBSTB_HAL_SOURCE = ni-libstb-hal
+LIBSTB_HAL_SITE = https://github.com/neutrino-images
+
+LIBSTB_HAL_SOURCE_DIR = $(SOURCE_DIR)/$(LIBSTB_HAL_SOURCE)
+LIBSTB_HAL_OBJ_DIR = $(BUILD_DIR)/$(LIBSTB_HAL_DIR)-obj
+LIBSTB_HAL_CONFIG_STATUS = $(LIBSTB_HAL_OBJ_DIR)/config.status
+
+$(LIBSTB_HAL_SOURCE_DIR): | $(SOURCE_DIR)
+	cd $(SOURCE_DIR) && git clone $(LIBSTB_HAL_SITE)/$(LIBSTB_HAL_SOURCE).git
+
+$(LIBSTB_HAL_CONFIG_STATUS): deps | $(LIBSTB_HAL_SOURCE_DIR) $(LIBSTB_HAL_OBJ_DIR)
+	set -e; cd $(LIBSTB_HAL_SOURCE_DIR); \
+		git checkout $(LIBSTB_HAL_VERSION)
+	$(LIBSTB_HAL_SOURCE_DIR)/autogen.sh
+	set -e; cd $(LIBSTB_HAL_OBJ_DIR); \
+		$(LIBSTB_HAL_SOURCE_DIR)/configure \
+			--prefix=$(TARGET_DIR)$(prefix) \
 			\
 			--enable-maintainer-mode \
 			--enable-shared=no \
 			$(if $(findstring gstreamer,$(CFLAGS)),--enable-gstreamer_10=yes) \
 			\
 			--with-target=native \
-			--with-targetroot=$(ROOT) \
+			--with-targetroot=$(TARGET_DIR) \
 			--with-boxtype=generic \
 			$(if $(filter $(BOXMODEL), raspi),--with-boxmodel=raspi) \
 			;
 
-# -----------------------------------------------------------------------------
+libstb-hal: $(LIBSTB_HAL_CONFIG_STATUS) | $(TARGET_DIR)
+	$(MAKE) -C $(LIBSTB_HAL_OBJ_DIR) install
 
-$(OBJ):
-	mkdir -p $(OBJ)
+libstb-hal.clean:
+	-$(MAKE) -C $(LIBSTB_HAL_OBJ_DIR) clean
+	rm -rf $(LIBSTB_HAL_OBJ_DIR)
 
-$(N_OBJ) \
-$(LH_OBJ): | $(OBJ)
-	mkdir -p $@
+# ------------------------------------------------------------------------------
 
-$(ROOT):
-	mkdir -p $@
-	mkdir -p $(ROOT)/etc
-	mkdir -p $(ROOT)/media/sda1/{epg,logos,movies,music,pictures,plugins,streamripper}
-	echo "imagename=NI \o/ Neutrino Generic-PC" > $(ROOT)/.version
-	cp --remove-destination -a skel-root/. $(ROOT)/
-	cp --remove-destination -a skel-user/. $(ROOT)/
+$(NEUTRINO_OBJ_DIR) \
+$(LIBSTB_HAL_OBJ_DIR): | $(BUILD_DIR)
+	mkdir -p $(@)
 
-$(DEPS) \
-$(SRC):
-	mkdir -p $@
+# ------------------------------------------------------------------------------
 
-$(N_SRC): | $(SOURCE)
-	cd $(SOURCE) && git clone https://github.com/neutrino-images/$(NEUTRINO).git
-
-$(LH_SRC): | $(SOURCE)
-	cd $(SOURCE) && git clone https://github.com/neutrino-images/$(LIBSTB-HAL).git
-
-# -----------------------------------------------------------------------------
-
-update: $(N_SRC) $(LH_SRC)
-	cd $(N_SRC) && git pull
-	cd $(LH_SRC) && git pull
+update: $(NEUTRINO_SOURCE_DIR) $(LIBSTB_HAL_SOURCE_DIR)
+	cd $(NEUTRINO_SOURCE_DIR); git pull
+	cd $(LIBSTB_HAL_SOURCE_DIR); git pull
 	git pull
 
-neutrino-clean:
-	-$(MAKE) -C $(N_OBJ) clean
-	rm -rf $(N_OBJ)
+# ------------------------------------------------------------------------------
 
-libstb-hal-clean:
-	-$(MAKE) -C $(LH_OBJ) clean
-	rm -rf $(LH_OBJ)
-
-clean: neutrino-clean libstb-hal-clean
+clean: neutrino.clean libstb-hal.clean
 
 clean-all:
-	rm -rf $(OBJ)
-	rm -rf $(ROOT)
-	rm -rf $(DEPS)
-	rm -rf deps
+	rm -rf $(BUILD_DIR)
+	rm -rf $(DEPS_DIR)
+	rm -rf $(TARGET_DIR)
 
-# -----------------------------------------------------------------------------
+%-clean:
+	-find $(DEPS_DIR) -name $(subst -clean,,$(@)) -delete
+
+# ------------------------------------------------------------------------------
 
 # libdvbsi is not commonly packaged for linux distributions
 LIBDVBSI_VERSION = 0.3.9
@@ -258,58 +307,58 @@ LIBDVBSI_DIR = libdvbsi++-$(LIBDVBSI_VERSION)
 LIBDVBSI_SOURCE = libdvbsi++-$(LIBDVBSI_VERSION).tar.bz2
 LIBDVBSI_SITE = https://github.com/mtdcr/libdvbsi/releases/download/$(LIBDVBSI_VERSION)
 
-$(SRC)/$(LIBDVBSI_SOURCE): | $(SRC)
-	cd $(SRC) && wget $(LIBDVBSI_SITE)/$(LIBDVBSI_SOURCE)
+$(ARCHIVE_DIR)/$(LIBDVBSI_SOURCE): | $(ARCHIVE_DIR)
+	cd $(ARCHIVE_DIR) && wget $(LIBDVBSI_SITE)/$(LIBDVBSI_SOURCE)
 
-libdvbsi: $(SRC)/$(LIBDVBSI_SOURCE) | $(DEPS) $(ROOT)
-	rm -rf $(SRC)/$(LIBDVBSI_DIR)
-	tar -C $(SRC) -xf $(SRC)/$(LIBDVBSI_SOURCE)
-	set -e; cd $(SRC)/$(LIBDVBSI_DIR); \
+libdvbsi: $(ARCHIVE_DIR)/$(LIBDVBSI_SOURCE) | $(BUILD_DIR) $(DEPS_DIR) $(TARGET_DIR)
+	rm -rf $(BUILD_DIR)/$(LIBDVBSI_DIR)
+	tar -C $(BUILD_DIR) -xf $(ARCHIVE_DIR)/$(LIBDVBSI_SOURCE)
+	set -e; cd $(BUILD_DIR)/$(LIBDVBSI_DIR); \
 		./autogen.sh; \
 		./configure \
-			--prefix=$(ROOT)$(prefix) \
+			--prefix=$(TARGET_DIR)$(prefix) \
 			; \
 		$(MAKE); \
 		make install
-	rm -rf $(SRC)/$(LIBDVBSI_DIR)
-	touch $(DEPS)/$(@)
+	rm -rf $(BUILD_DIR)/$(LIBDVBSI_DIR)
+	touch $(DEPS_DIR)/$(@)
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 LUA_VERSION = 5.2.4
 LUA_DIR = lua-$(LUA_VERSION)
 LUA_SOURCE = lua-$(LUA_VERSION).tar.gz
 LUA_SITE = https://www.lua.org/ftp
 
-$(SRC)/$(LUA_SOURCE): | $(SRC)
-	cd $(SRC) && wget $(LUA_SITE)/$(LUA_SOURCE)
+$(ARCHIVE_DIR)/$(LUA_SOURCE): | $(ARCHIVE_DIR)
+	cd $(ARCHIVE_DIR) && wget $(LUA_SITE)/$(LUA_SOURCE)
 
-lua: $(SRC)/$(LUA_SOURCE) | $(DEPS) $(ROOT)
-	rm -rf $(SRC)/$(LUA_DIR)
-	tar -C $(SRC) -xf $(SRC)/$(LUA_SOURCE)
-	set -e;	cd $(SRC)/$(LUA_DIR); \
-		sed -i "s|^#define LUA_ROOT	.*|#define LUA_ROOT	\"$(ROOT)$(prefix)/\"|" src/luaconf.h && \
+lua: $(ARCHIVE_DIR)/$(LUA_SOURCE) | $(BUILD_DIR) $(DEPS_DIR) $(TARGET_DIR)
+	rm -rf $(BUILD_DIR)/$(LUA_DIR)
+	tar -C $(BUILD_DIR) -xf $(ARCHIVE_DIR)/$(LUA_SOURCE)
+	set -e;	cd $(BUILD_DIR)/$(LUA_DIR); \
+		sed -i "s|^#define LUA_ROOT	.*|#define LUA_ROOT	\"$(TARGET_DIR)$(prefix)/\"|" src/luaconf.h && \
 		$(MAKE) linux; \
-		make install INSTALL_TOP=$(ROOT)$(prefix)
-	rm -rf $(SRC)/$(LUA_DIR)
-	touch $(DEPS)/$(@)
+		make install INSTALL_TOP=$(TARGET_DIR)$(prefix)
+	rm -rf $(BUILD_DIR)/$(LUA_DIR)
+	touch $(DEPS_DIR)/$(@)
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 FFMPEG_VERSION = 4.4.2
 FFMPEG_DIR = ffmpeg-$(FFMPEG_VERSION)
 FFMPEG_SOURCE = ffmpeg-$(FFMPEG_VERSION).tar.xz
 FFMPEG_SITE = http://www.ffmpeg.org/releases
 
-$(SRC)/$(FFMPEG_SOURCE): | $(SRC)
-	cd $(SRC) && wget $(FFMPEG_SITE)/$(FFMPEG_SOURCE)
+$(ARCHIVE_DIR)/$(FFMPEG_SOURCE): | $(ARCHIVE_DIR)
+	cd $(ARCHIVE_DIR) && wget $(FFMPEG_SITE)/$(FFMPEG_SOURCE)
 
-ffmpeg: $(SRC)/$(FFMPEG_SOURCE) | $(DEPS) $(ROOT)
-	rm -rf $(SRC)/$(FFMPEG_DIR)
-	tar -C $(SRC) -xf $(SRC)/$(FFMPEG_SOURCE)
-	set -e; cd $(SRC)/$(FFMPEG_DIR); \
+ffmpeg: $(ARCHIVE_DIR)/$(FFMPEG_SOURCE) | $(BUILD_DIR) $(DEPS_DIR) $(TARGET_DIR)
+	rm -rf $(BUILD_DIR)/$(FFMPEG_DIR)
+	tar -C $(BUILD_DIR) -xf $(ARCHIVE_DIR)/$(FFMPEG_SOURCE)
+	set -e; cd $(BUILD_DIR)/$(FFMPEG_DIR); \
 		./configure \
-			--prefix=$(ROOT)$(prefix) \
+			--prefix=$(TARGET_DIR)$(prefix) \
 			\
 			--disable-doc \
 			--disable-htmlpages \
@@ -322,10 +371,10 @@ ffmpeg: $(SRC)/$(FFMPEG_SOURCE) | $(DEPS) $(ROOT)
 			; \
 		$(MAKE); \
 		make install
-	rm -rf $(SRC)/$(FFMPEG_DIR)
-	touch $(DEPS)/$(@)
+	rm -rf $(BUILD_DIR)/$(FFMPEG_DIR)
+	touch $(DEPS_DIR)/$(@)
 
-# -----------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 #PHONY =
 
