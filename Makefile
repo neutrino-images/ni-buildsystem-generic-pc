@@ -1,6 +1,6 @@
 ################################################################################
 #
-# Makefile for building native ni-neutrino and ni-libstb-hal
+# Makefile for building native ni-libstb-hal and ni-neutrino
 #
 ################################################################################
 #
@@ -159,8 +159,6 @@ config.local:
 
 # ------------------------------------------------------------------------------
 
-deps: libdvbsi lua ffmpeg
-
 run:
 	export SIMULATE_FE=1; \
 	$(TARGET_DIR)$(prefix)/bin/neutrino
@@ -195,10 +193,54 @@ $(TARGET_DIR): | $(SKEL_DIR)
 
 # ------------------------------------------------------------------------------
 
+LIBSTB_HAL_VERSION = master
+LIBSTB_HAL_DIR = ni-libstb-hal
+LIBSTB_HAL_SOURCE = ni-libstb-hal
+LIBSTB_HAL_SITE = https://github.com/neutrino-images
+
+LIBSTB_HAL_DEPENDENCIES = ffmpeg
+
+LIBSTB_HAL_SOURCE_DIR = $(SOURCE_DIR)/$(LIBSTB_HAL_SOURCE)
+LIBSTB_HAL_OBJ_DIR = $(BUILD_DIR)/$(LIBSTB_HAL_DIR)-obj
+LIBSTB_HAL_CONFIG_STATUS = $(LIBSTB_HAL_OBJ_DIR)/config.status
+
+$(LIBSTB_HAL_SOURCE_DIR): | $(SOURCE_DIR)
+	cd $(SOURCE_DIR) && git clone $(LIBSTB_HAL_SITE)/$(LIBSTB_HAL_SOURCE).git
+
+$(LIBSTB_HAL_CONFIG_STATUS): $(LIBSTB_HAL_DEPENDENCIES) | $(LIBSTB_HAL_SOURCE_DIR) $(LIBSTB_HAL_OBJ_DIR)
+	set -e; cd $(LIBSTB_HAL_SOURCE_DIR); \
+		git checkout $(LIBSTB_HAL_VERSION)
+	$(LIBSTB_HAL_SOURCE_DIR)/autogen.sh
+	set -e; cd $(LIBSTB_HAL_OBJ_DIR); \
+		$(LIBSTB_HAL_SOURCE_DIR)/configure \
+			--prefix=$(TARGET_DIR)$(prefix) \
+			\
+			--enable-maintainer-mode \
+			--enable-shared=no \
+			$(if $(findstring gstreamer,$(CFLAGS)),--enable-gstreamer_10=yes) \
+			\
+			--with-target=native \
+			--with-targetroot=$(TARGET_DIR) \
+			--with-boxtype=generic \
+			$(if $(filter $(BOXMODEL), raspi),--with-boxmodel=raspi) \
+			;
+
+$(LIBSTB_HAL_OBJ_DIR)/libstb-hal.a: libstb-hal
+libstb-hal: $(LIBSTB_HAL_CONFIG_STATUS) | $(TARGET_DIR)
+	$(MAKE) -C $(LIBSTB_HAL_OBJ_DIR) install
+
+libstb-hal.clean:
+	-$(MAKE) -C $(LIBSTB_HAL_OBJ_DIR) clean
+	rm -rf $(LIBSTB_HAL_OBJ_DIR)
+
+# ------------------------------------------------------------------------------
+
 NEUTRINO_VERSION = master
 NEUTRINO_DIR = ni-neutrino
 NEUTRINO_SOURCE = ni-neutrino
 NEUTRINO_SITE = https://github.com/neutrino-images
+
+NEUTRINO_DEPENDENCIES = ffmpeg libdvbsi lua
 
 NEUTRINO_SOURCE_DIR = $(SOURCE_DIR)/$(NEUTRINO_SOURCE)
 NEUTRINO_OBJ_DIR = $(BUILD_DIR)/$(NEUTRINO_DIR)-obj
@@ -207,7 +249,7 @@ NEUTRINO_CONFIG_STATUS = $(NEUTRINO_OBJ_DIR)/config.status
 $(NEUTRINO_SOURCE_DIR): | $(SOURCE_DIR)
 	cd $(SOURCE_DIR); git clone $(NEUTRINO_SITE)/$(NEUTRINO_SOURCE).git
 
-$(NEUTRINO_CONFIG_STATUS): libstb-hal | $(NEUTRINO_SOURCE_DIR) $(NEUTRINO_OBJ_DIR)
+$(NEUTRINO_CONFIG_STATUS): $(NEUTRINO_DEPENDENCIES) | $(NEUTRINO_SOURCE_DIR) $(NEUTRINO_OBJ_DIR) $(LIBSTB_HAL_OBJ_DIR)/libstb-hal.a
 	set -e; cd $(NEUTRINO_SOURCE_DIR); \
 		git checkout $(NEUTRINO_VERSION)
 	$(NEUTRINO_SOURCE_DIR)/autogen.sh
@@ -241,59 +283,20 @@ neutrino.clean:
 
 # ------------------------------------------------------------------------------
 
-LIBSTB_HAL_VERSION = master
-LIBSTB_HAL_DIR = ni-libstb-hal
-LIBSTB_HAL_SOURCE = ni-libstb-hal
-LIBSTB_HAL_SITE = https://github.com/neutrino-images
-
-LIBSTB_HAL_SOURCE_DIR = $(SOURCE_DIR)/$(LIBSTB_HAL_SOURCE)
-LIBSTB_HAL_OBJ_DIR = $(BUILD_DIR)/$(LIBSTB_HAL_DIR)-obj
-LIBSTB_HAL_CONFIG_STATUS = $(LIBSTB_HAL_OBJ_DIR)/config.status
-
-$(LIBSTB_HAL_SOURCE_DIR): | $(SOURCE_DIR)
-	cd $(SOURCE_DIR) && git clone $(LIBSTB_HAL_SITE)/$(LIBSTB_HAL_SOURCE).git
-
-$(LIBSTB_HAL_CONFIG_STATUS): deps | $(LIBSTB_HAL_SOURCE_DIR) $(LIBSTB_HAL_OBJ_DIR)
-	set -e; cd $(LIBSTB_HAL_SOURCE_DIR); \
-		git checkout $(LIBSTB_HAL_VERSION)
-	$(LIBSTB_HAL_SOURCE_DIR)/autogen.sh
-	set -e; cd $(LIBSTB_HAL_OBJ_DIR); \
-		$(LIBSTB_HAL_SOURCE_DIR)/configure \
-			--prefix=$(TARGET_DIR)$(prefix) \
-			\
-			--enable-maintainer-mode \
-			--enable-shared=no \
-			$(if $(findstring gstreamer,$(CFLAGS)),--enable-gstreamer_10=yes) \
-			\
-			--with-target=native \
-			--with-targetroot=$(TARGET_DIR) \
-			--with-boxtype=generic \
-			$(if $(filter $(BOXMODEL), raspi),--with-boxmodel=raspi) \
-			;
-
-libstb-hal: $(LIBSTB_HAL_CONFIG_STATUS) | $(TARGET_DIR)
-	$(MAKE) -C $(LIBSTB_HAL_OBJ_DIR) install
-
-libstb-hal.clean:
-	-$(MAKE) -C $(LIBSTB_HAL_OBJ_DIR) clean
-	rm -rf $(LIBSTB_HAL_OBJ_DIR)
-
-# ------------------------------------------------------------------------------
-
-$(NEUTRINO_OBJ_DIR) \
-$(LIBSTB_HAL_OBJ_DIR): | $(BUILD_DIR)
+$(LIBSTB_HAL_OBJ_DIR) \
+$(NEUTRINO_OBJ_DIR): | $(BUILD_DIR)
 	mkdir -p $(@)
 
 # ------------------------------------------------------------------------------
 
-update: $(NEUTRINO_SOURCE_DIR) $(LIBSTB_HAL_SOURCE_DIR)
-	cd $(NEUTRINO_SOURCE_DIR); git pull
+update: $(LIBSTB_HAL_SOURCE_DIR) $(NEUTRINO_SOURCE_DIR)
 	cd $(LIBSTB_HAL_SOURCE_DIR); git pull
+	cd $(NEUTRINO_SOURCE_DIR); git pull
 	git pull
 
 # ------------------------------------------------------------------------------
 
-clean: neutrino.clean libstb-hal.clean
+clean: libstb-hal.clean neutrino.clean
 
 clean-all:
 	rm -rf $(BUILD_DIR)
@@ -302,6 +305,37 @@ clean-all:
 
 %-clean:
 	-find $(DEPS_DIR) -name $(subst -clean,,$(@)) -delete
+
+# ------------------------------------------------------------------------------
+
+FFMPEG_VERSION = 4.4.2
+FFMPEG_DIR = ffmpeg-$(FFMPEG_VERSION)
+FFMPEG_SOURCE = ffmpeg-$(FFMPEG_VERSION).tar.xz
+FFMPEG_SITE = http://www.ffmpeg.org/releases
+
+$(ARCHIVE_DIR)/$(FFMPEG_SOURCE): | $(ARCHIVE_DIR)
+	cd $(ARCHIVE_DIR) && wget $(FFMPEG_SITE)/$(FFMPEG_SOURCE)
+
+ffmpeg: $(ARCHIVE_DIR)/$(FFMPEG_SOURCE) | $(BUILD_DIR) $(DEPS_DIR) $(TARGET_DIR)
+	rm -rf $(BUILD_DIR)/$(FFMPEG_DIR)
+	tar -C $(BUILD_DIR) -xf $(ARCHIVE_DIR)/$(FFMPEG_SOURCE)
+	set -e; cd $(BUILD_DIR)/$(FFMPEG_DIR); \
+		./configure \
+			--prefix=$(TARGET_DIR)$(prefix) \
+			\
+			--disable-doc \
+			--disable-htmlpages \
+			--disable-manpages \
+			--disable-podpages \
+			--disable-txtpages \
+			\
+			--disable-stripping \
+			--disable-x86asm \
+			; \
+		$(MAKE); \
+		make install
+	rm -rf $(BUILD_DIR)/$(FFMPEG_DIR)
+	touch $(DEPS_DIR)/$(@)
 
 # ------------------------------------------------------------------------------
 
@@ -345,37 +379,6 @@ lua: $(ARCHIVE_DIR)/$(LUA_SOURCE) | $(BUILD_DIR) $(DEPS_DIR) $(TARGET_DIR)
 		$(MAKE) linux; \
 		make install INSTALL_TOP=$(TARGET_DIR)$(prefix)
 	rm -rf $(BUILD_DIR)/$(LUA_DIR)
-	touch $(DEPS_DIR)/$(@)
-
-# ------------------------------------------------------------------------------
-
-FFMPEG_VERSION = 4.4.2
-FFMPEG_DIR = ffmpeg-$(FFMPEG_VERSION)
-FFMPEG_SOURCE = ffmpeg-$(FFMPEG_VERSION).tar.xz
-FFMPEG_SITE = http://www.ffmpeg.org/releases
-
-$(ARCHIVE_DIR)/$(FFMPEG_SOURCE): | $(ARCHIVE_DIR)
-	cd $(ARCHIVE_DIR) && wget $(FFMPEG_SITE)/$(FFMPEG_SOURCE)
-
-ffmpeg: $(ARCHIVE_DIR)/$(FFMPEG_SOURCE) | $(BUILD_DIR) $(DEPS_DIR) $(TARGET_DIR)
-	rm -rf $(BUILD_DIR)/$(FFMPEG_DIR)
-	tar -C $(BUILD_DIR) -xf $(ARCHIVE_DIR)/$(FFMPEG_SOURCE)
-	set -e; cd $(BUILD_DIR)/$(FFMPEG_DIR); \
-		./configure \
-			--prefix=$(TARGET_DIR)$(prefix) \
-			\
-			--disable-doc \
-			--disable-htmlpages \
-			--disable-manpages \
-			--disable-podpages \
-			--disable-txtpages \
-			\
-			--disable-stripping \
-			--disable-x86asm \
-			; \
-		$(MAKE); \
-		make install
-	rm -rf $(BUILD_DIR)/$(FFMPEG_DIR)
 	touch $(DEPS_DIR)/$(@)
 
 # ------------------------------------------------------------------------------

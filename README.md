@@ -15,26 +15,17 @@ Siehe Makefile!
 make local-files
 ```
 
-## 4) libdvbsi++, lua und ffmpeg bauen.
-```bash
-make deps
-```
-oder
-```bash
-make libdvbsi lua ffmpeg
-```
-
-## 5) Neutrino bauen
+## 4) Neutrino bauen
 ```bash
 make neutrino
 ```
 
-## 6) Neutrino starten
+## 5) Neutrino starten
 ```bash
 make run
 ```
 
-## 7) Aktualisieren und sauber machen
+## 6) Aktualisieren und sauber machen
 ```bash
 make update
 make clean
