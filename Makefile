@@ -24,7 +24,7 @@
 #
 # apt-get install libavformat-dev
 # apt-get install libswscale-dev
-# echo "deb http://www.deb-multimedia.org jessie main non-free" >> /etc/apt/sources.list
+# echo "deb http://www.deb-multimedia.org stable main non-free" >> /etc/apt/sources.list
 # apt-get install deb-multimedia-keyring
 # apt-get install libswresample-dev
 # apt-get install libopenthreads-dev
@@ -177,17 +177,17 @@ $(BUILD_DIR) \
 $(DEPS_DIR) \
 $(ARCHIVE_DIR) \
 $(SKEL_DIR):
-	mkdir -p $(@)
+	install -d $(@)
 
 ifneq ($(ARCHIVE_DIR),$(SOURCE_DIR))
 $(SOURCE_DIR):
-	mkdir -p $(@)
+	install -d $(@)
 endif
 
 $(TARGET_DIR): | $(SKEL_DIR)
-	mkdir -p $(@)
-	mkdir -p $(@)/etc
-	mkdir -p $(@)/media/sda1/{epg,logos,movies,music,pictures,plugins,streamripper}
+	install -d $(@)
+	install -d $(@)/etc
+	install -d $(@)/media/sda1/{epg,logos,movies,music,pictures,plugins,streamripper}
 	echo "imagename=NI \o/ Neutrino Generic-PC" > $(@)/.version
 	cp --remove-destination -a $(SKEL_DIR)/. $(@)/
 
@@ -285,7 +285,7 @@ neutrino.clean:
 
 $(LIBSTB_HAL_OBJ_DIR) \
 $(NEUTRINO_OBJ_DIR): | $(BUILD_DIR)
-	mkdir -p $(@)
+	install -d $(@)
 
 # ------------------------------------------------------------------------------
 
