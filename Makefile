@@ -185,15 +185,19 @@ $(SOURCE_DIR):
 endif
 
 $(TARGET_DIR): | $(SKEL_DIR)
-	install -d $(@)
-	install -d $(@)/etc
-	install -d $(@)/media/sda1/{epg,logos,movies,music,pictures,plugins,streamripper}
+	install -d $(@) $(@)/etc $(foreach dir,\
+		epg logos movies music pictures plugins streamripper,\
+		$(@)/media/sda1/$(dir))
 	echo "imagename=NI \o/ Neutrino Generic-PC" > $(@)/.version
 	cp --remove-destination -a $(SKEL_DIR)/. $(@)/
 
 # ------------------------------------------------------------------------------
 
-LIBSTB_HAL_VERSION = master
+ifeq ($(LIBSTB_HAL_BRANCH),$(empty))
+LIBSTB_HAL_BRANCH = master
+endif
+
+LIBSTB_HAL_VERSION = $(LIBSTB_HAL_BRANCH)
 LIBSTB_HAL_DIR = ni-libstb-hal
 LIBSTB_HAL_SOURCE = ni-libstb-hal
 LIBSTB_HAL_SITE = https://github.com/neutrino-images
@@ -235,12 +239,16 @@ libstb-hal.clean:
 
 # ------------------------------------------------------------------------------
 
-NEUTRINO_VERSION = master
+ifeq ($(NEUTRINO_BRANCH),$(empty))
+NEUTRINO_BRANCH = master
+endif
+
+NEUTRINO_VERSION = $(NEUTRINO_BRANCH)
 NEUTRINO_DIR = ni-neutrino
 NEUTRINO_SOURCE = ni-neutrino
 NEUTRINO_SITE = https://github.com/neutrino-images
 
-NEUTRINO_DEPENDENCIES = ffmpeg libdvbsi lua
+NEUTRINO_DEPENDENCIES = ffmpeg libdvbsi lua libmicrohttpd preact
 
 NEUTRINO_SOURCE_DIR = $(SOURCE_DIR)/$(NEUTRINO_SOURCE)
 NEUTRINO_OBJ_DIR = $(BUILD_DIR)/$(NEUTRINO_DIR)-obj
@@ -264,6 +272,7 @@ $(NEUTRINO_CONFIG_STATUS): $(NEUTRINO_DEPENDENCIES) | $(NEUTRINO_SOURCE_DIR) $(N
 			--enable-mdev \
 			--enable-giflib \
 			--enable-cleanup \
+			--enable-unit-tests \
 			\
 			--with-target=native \
 			--with-targetroot=$(TARGET_DIR) \
@@ -308,7 +317,7 @@ clean-all:
 
 # ------------------------------------------------------------------------------
 
-FFMPEG_VERSION = 4.4.2
+FFMPEG_VERSION = 6.1.1
 FFMPEG_DIR = ffmpeg-$(FFMPEG_VERSION)
 FFMPEG_SOURCE = ffmpeg-$(FFMPEG_VERSION).tar.xz
 FFMPEG_SITE = http://www.ffmpeg.org/releases
@@ -383,6 +392,56 @@ lua: $(ARCHIVE_DIR)/$(LUA_SOURCE) | $(BUILD_DIR) $(DEPS_DIR) $(TARGET_DIR)
 
 # ------------------------------------------------------------------------------
 
-#PHONY =
+LIBMICROHTTPD_VERSION = 1.0.10
+LIBMICROHTTPD_DIR = libmicrohttpd-$(LIBMICROHTTPD_VERSION)
+LIBMICROHTTPD_SOURCE = libmicrohttpd-$(LIBMICROHTTPD_VERSION).tar.gz
+LIBMICROHTTPD_SITE = http://ftp.gnu.org/pub/gnu/libmicrohttpd
+
+$(ARCHIVE_DIR)/$(LIBMICROHTTPD_SOURCE): | $(ARCHIVE_DIR)
+	cd $(ARCHIVE_DIR) && wget $(LIBMICROHTTPD_SITE)/$(LIBMICROHTTPD_SOURCE)
+
+libmicrohttpd: $(ARCHIVE_DIR)/$(LIBMICROHTTPD_SOURCE) | $(BUILD_DIR) $(DEPS_DIR) $(TARGET_DIR)
+	rm -rf $(BUILD_DIR)/$(LIBMICROHTTPD_DIR)
+	tar -C $(BUILD_DIR) -xf $(ARCHIVE_DIR)/$(LIBMICROHTTPD_SOURCE)
+	set -e; cd $(BUILD_DIR)/$(LIBMICROHTTPD_DIR); \
+		./configure \
+			--prefix=$(TARGET_DIR)$(prefix) \
+			; \
+		$(MAKE); \
+		make install
+	rm -rf $(BUILD_DIR)/$(LIBMICROHTTPD_DIR)
+	touch $(DEPS_DIR)/$(@)
+
+# ------------------------------------------------------------------------------
+
+PREACT_VERSION = 10.24.3
+PREACT_DIR     = preact-$(PREACT_VERSION)
+PREACT_SOURCE  = preact-$(PREACT_VERSION).tgz
+PREACT_SITE    = https://registry.npmjs.org/preact/-
+
+PREACT_TARGET_DIR = $(TARGET_DIR)$(prefix)/share/tuxbox/neutrino/httpd/ni-web/vendor
+
+$(ARCHIVE_DIR)/$(PREACT_SOURCE): | $(ARCHIVE_DIR)
+	cd $(ARCHIVE_DIR) && wget $(PREACT_SITE)/$(PREACT_SOURCE)
+
+preact: $(ARCHIVE_DIR)/$(PREACT_SOURCE) | $(BUILD_DIR) $(DEPS_DIR) $(TARGET_DIR)
+	rm -rf $(BUILD_DIR)/$(PREACT_DIR)
+	# npm archives all unpack to package/, so each needs a directory of its own
+	mkdir $(BUILD_DIR)/$(PREACT_DIR)
+	tar -C $(BUILD_DIR)/$(PREACT_DIR) -xf $(ARCHIVE_DIR)/$(PREACT_SOURCE)
+	install -d $(PREACT_TARGET_DIR)
+	sed -e '/^\/\/# sourceMappingURL=/d' \
+		$(BUILD_DIR)/$(PREACT_DIR)/package/dist/preact.module.js \
+		| gzip -9 -n -c > $(PREACT_TARGET_DIR)/preact.module.js.gz
+	sed -e '/^\/\/# sourceMappingURL=/d' \
+		-e 's|from"preact"|from"/vendor/preact.module.js"|g' \
+		$(BUILD_DIR)/$(PREACT_DIR)/package/hooks/dist/hooks.module.js \
+		| gzip -9 -n -c > $(PREACT_TARGET_DIR)/hooks.module.js.gz
+	rm -rf $(BUILD_DIR)/$(PREACT_DIR)
+	touch $(DEPS_DIR)/$(@)
+
+# ------------------------------------------------------------------------------
+
+PHONY = preact
 
 .PHONY: $(PHONY)

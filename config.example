@@ -6,3 +6,11 @@
 # Choose one (1) of the following BOXMODELs. O n e !
 #BOXMODEL = generic
 #BOXMODEL = raspi
+
+# -----------------------------------------------------------------------------
+
+# libstb-hal branch
+#LIBSTB_HAL_BRANCH = your/branch
+
+# Neutrino branch
+#NEUTRINO_BRANCH = your/branch
